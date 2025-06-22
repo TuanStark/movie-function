@@ -1,0 +1,203 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  email      String    @unique
+  password   String
+  role       String
+  avatar     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  bookings   Booking[]
+  articles   Article[]
+  @@map("users")
+}
+
+model Movie {
+  id            Int           @id @default(autoincrement())
+  title         String
+  posterPath    String
+  backdropPath  String
+  rating        Float
+  synopsis      String
+  duration      String
+  director      String
+  releaseDate   DateTime
+  trailerUrl    String
+  upcoming      Boolean
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  genres        MovieGenre[]
+  casts         MovieCast[]
+  showtimes     Showtime[]
+  @@map("movies")
+}
+
+model Genre {
+  id         Int         @id @default(autoincrement())
+  name       String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  movies     MovieGenre[]
+  @@map("genres")
+}
+
+model MovieGenre {
+  id       Int   @id @default(autoincrement())
+  movieId  Int
+  genreId  Int
+
+  movie    Movie @relation(fields: [movieId], references: [id])
+  genre    Genre @relation(fields: [genreId], references: [id])
+
+  @@unique([movieId, genreId])
+  @@map("movieGenres")
+}
+
+model Actor {
+  id         Int         @id @default(autoincrement())
+  name       String
+  photo      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  movies     MovieCast[]
+  @@map("actors")
+}
+
+model MovieCast {
+  id       Int    @id @default(autoincrement())
+  movieId  Int
+  actorId  Int
+  role     String
+
+  movie    Movie  @relation(fields: [movieId], references: [id])
+  actor    Actor  @relation(fields: [actorId], references: [id])
+
+  @@unique([movieId, actorId])
+  @@map("movieCasts")
+}
+
+model Theater {
+  id         Int       @id @default(autoincrement())
+  name       String
+  location   String
+  latitude   Float
+  longitude  Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  seats      Seat[]
+  showtimes  Showtime[]
+  @@map("theaters")
+}
+
+model Showtime {
+  id         Int       @id @default(autoincrement())
+  movieId    Int
+  theaterId  Int
+  date       DateTime
+  time       String
+  price      Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  movie      Movie     @relation(fields: [movieId], references: [id])
+  theater    Theater   @relation(fields: [theaterId], references: [id])
+  bookings   Booking[]
+  @@map("showtimes")
+}
+
+model Seat {
+  id          Int         @id @default(autoincrement())
+  theaterId   Int
+  row         String
+  number      Int
+  type        String
+  price       Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  theater     Theater     @relation(fields: [theaterId], references: [id])
+  bookingSeats BookingSeat[]
+  @@map("seats")
+}
+
+model Booking {
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  showtimeId   Int
+  totalPrice   Float
+  bookingDate  DateTime
+  bookingCode  String
+  status       String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  showtime     Showtime     @relation(fields: [showtimeId], references: [id])
+  seats        BookingSeat[]
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id         Int       @id @default(autoincrement())
+  bookingId  Int
+  seatId     Int
+  status     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  booking    Booking   @relation(fields: [bookingId], references: [id])
+  seat       Seat      @relation(fields: [seatId], references: [id])
+
+  @@unique([bookingId, seatId])
+  @@map("bookingSeats")
+}
+
+model ArticleCategory {
+  id         Int       @id @default(autoincrement())
+  name       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  articles   Article[]
+  @@map("articleCategories")
+}
+
+model Article {
+  id            Int              @id @default(autoincrement())
+  title         String
+  excerpt       String
+  content       String
+  imagePath     String
+  categoryId    Int
+  authorId      Int
+  date          DateTime
+  readTime      Int
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  category      ArticleCategory  @relation(fields: [categoryId], references: [id])
+  author        User             @relation(fields: [authorId], references: [id])
+  @@map("articles")
+} 

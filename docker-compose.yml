@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  # functions:
+  #   container_name: "${PROJECT_NAME}_functions"
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - .env
+  #   command: sh -c "npx prisma generate && npm run dev"
+  #   restart: always
+  #   networks:
+  #     my_custom_network:
+  #       ipv4_address: ${FUNCTION_IP}
+
+  db:
+    image: postgres:latest
+    container_name: "${PROJECT_NAME}_postgres"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      my_custom_network:
+        ipv4_address: ${POSTGRES_IP}
+
+  adminer:
+    image: adminer
+    container_name: "${PROJECT_NAME}_adminer"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
+    networks:
+      my_custom_network:
+        ipv4_address: ${ADMINER_IP}
+
+volumes:
+  postgres-data:
+
+networks:
+  my_custom_network:
+    external: true
