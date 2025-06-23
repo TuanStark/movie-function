@@ -86,4 +86,44 @@ export class CloudinaryService {
       });
     });
   }
+
+  /**
+   * Update một ảnh: xóa ảnh cũ (nếu có) và upload ảnh mới
+   * @param file File ảnh mới từ Multer
+   * @param oldPublicId Public ID của ảnh cũ (nếu có)
+   * @param options Cấu hình Cloudinary
+   */
+  async updateImage(
+    file: Express.Multer.File,
+    oldPublicId: string | null,
+    options: UploadApiOptions = {},
+  ): Promise<UploadApiResponse | UploadApiErrorResponse> {
+    // Xóa ảnh cũ nếu có
+    if (oldPublicId) {
+      await this.deleteImage(oldPublicId);
+    }
+
+    // Upload ảnh mới
+    return this.uploadImage(file, options);
+  }
+
+  /**
+   * Update nhiều ảnh: xóa danh sách ảnh cũ và upload danh sách ảnh mới
+   * @param files Danh sách file ảnh mới từ Multer
+   * @param oldPublicIds Danh sách public ID của ảnh cũ
+   * @param options Cấu hình Cloudinary
+   */
+  async updateMultipleImages(
+    files: Express.Multer.File[],
+    oldPublicIds: string[] | null,
+    options: UploadApiOptions = {},
+  ): Promise<(UploadApiResponse | UploadApiErrorResponse)[]> {
+    // Xóa các ảnh cũ nếu có
+    if (oldPublicIds && oldPublicIds.length > 0) {
+      await this.deleteMultipleImages(oldPublicIds);
+    }
+
+    // Upload các ảnh mới
+    return this.uploadMultipleImages(files, options);
+  }
 }
