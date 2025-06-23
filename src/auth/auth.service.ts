@@ -1,9 +1,11 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthDTO } from './dto';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UserService } from 'src/user/user.service';
+import { CurrentUser } from './types/current-user';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +13,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private userService: UserService,
   ) {}
 
   async register(dto: AuthDTO) {
@@ -129,74 +132,10 @@ export class AuthService {
     }
   }
 
-//   async loginGoogle(dto: { email: string; name: string; googleId: string }) {
-//     const { email, name, googleId } = dto;
-
-//     let user = await this.prisma.user.findFirst({
-//       where: {
-//         OR: [
-//           { email },
-//         //   { GoogleId: googleId },
-//         ],
-//       },
-//     });
-
-//     if (!user) {
-//       // Tạo user mới nếu chưa tồn tại
-//       user = await this.prisma.user.create({
-//         data: {
-//           email,
-//           firstName: name.split(' ')[0],
-//           lastName: name.split(' ')[1],
-//           password: "",
-//         //   GoogleId: googleId,
-//           role: "USER"
-//         },
-//       });
-//     } else if (!user.GoogleId) {
-//       // Cập nhật googleId nếu user tồn tại qua email nhưng chưa có googleId
-//       user = await this.prisma.user.update({
-//         where: { id: user.id },
-//         data: { GoogleId: googleId }
-//       });
-//     }
-
-
-//     return await this.signJwtToken(user.id, user.email);
-//   }
-
-//   async loginFacebook(dto: { name: string; facebookId: string }) {
-//     const { name, facebookId } = dto;
-
-//     let user = await this.prisma.user.findFirst({
-//       where: {
-//         OR: [
-//           { FacebookId: facebookId },
-//         ],
-//       },
-//     });
-
-//     if (!user) {
-//       user = await this.prisma.user.create({
-//         data: {
-//           email: "",
-//           fullName: name,
-//           password: "",
-//           FacebookId:facebookId,
-//           role: {
-//             connect: {
-//               id: 1,
-//             },
-//           },
-//         },
-//       });
-//     } else if (!user.FacebookId) {
-//       user = await this.prisma.user.update({
-//         where: { id: user.id },
-//         data: { FacebookId: facebookId },
-//       });
-//     }
-
-//     return await this.signJwtToken(user.id, user.email);
-//   }
+  async validateJwtUser(userId: number) {
+    const user = await this.userService.findOne(userId);
+    if (!user) throw new UnauthorizedException('User not found!');
+    const currentUser: CurrentUser = { id: user.id, role: user.role };
+    return currentUser;
+  }
 }
