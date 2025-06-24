@@ -7,6 +7,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ImageController } from './cloudinary/cloundinary.controler';
+import { MoviesModule } from './movies/movies.module';
+import { TheatersModule } from './theaters/theaters.module';
 
 @Module({
   imports: [
@@ -16,7 +18,9 @@ import { ImageController } from './cloudinary/cloundinary.controler';
     PrismaModule,
     UserModule,
     AuthModule,
-    CloudinaryModule
+    CloudinaryModule,
+    MoviesModule,
+    TheatersModule
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],
