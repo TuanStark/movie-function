@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, HttpStatus, HttpException, Query, UseGuards } from '@nestjs/common';
 import { TheatersService } from './theaters.service';
 import { CreateTheaterDto } from './dto/create-theater.dto';
 import { UpdateTheaterDto } from './dto/update-theater.dto';
@@ -6,11 +6,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadedFile } from '@nestjs/common';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
+import { FindAllDto } from 'src/global/find-all.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 
 @Controller('theaters')
 export class TheatersController {
   constructor(private readonly theatersService: TheatersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 1000000 },
@@ -33,23 +36,69 @@ export class TheatersController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.theatersService.findAll();
+  async findAll(@Query() query: FindAllDto) {
+    try {
+      const theaters = await this.theatersService.findAll(query);
+      return new ResponseData(theaters, HttpStatus.OK, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(
+        new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
+        HttpStatus.BAD_REQUEST
+      );
+    }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.theatersService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    try {
+      const theater = await this.theatersService.findOne(+id);
+      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(
+        new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
+        HttpStatus.BAD_REQUEST
+      );
+    }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTheaterDto: UpdateTheaterDto) {
-    return this.theatersService.update(+id, updateTheaterDto);
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 1000000 },
+    fileFilter: (req, file, cb) => {
+      if (!file || !file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    },
+  })) 
+  async update(@Param('id') id: string, @Body() updateTheaterDto: UpdateTheaterDto, @UploadedFile() file: Express.Multer.File) {
+    console.log("hello");
+    try {
+      const theater = await this.theatersService.update(+id, updateTheaterDto, file);
+      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(
+        new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
+        HttpStatus.BAD_REQUEST
+      );
+    }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.theatersService.remove(+id);
+  async remove(@Param('id') id: string) {
+    try {
+      const theater = await this.theatersService.remove(+id);
+      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(
+        new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
+        HttpStatus.BAD_REQUEST
+      );
+    }
   }
 }
