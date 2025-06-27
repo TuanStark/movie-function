@@ -25,6 +25,7 @@ export class TheatersController {
     },
   })) 
   async create(@Body() createTheaterDto: CreateTheaterDto, @UploadedFile() file: Express.Multer.File) {
+    // console.log("file", file);
     try {      
       const theater = await this.theatersService.create(createTheaterDto, file);
       return new ResponseData(theater, HttpStatus.CREATED, HttpMessage.CREATED);
