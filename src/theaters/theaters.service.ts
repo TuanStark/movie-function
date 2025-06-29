@@ -175,5 +175,9 @@ export class TheatersService {
     if (!theater) {
       throw new NotFoundException('Theater not found');
     }
+
+    return await this.prisma.theater.delete({
+      where:{id : id}
+    });
   }
 }

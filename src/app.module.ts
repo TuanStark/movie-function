@@ -9,6 +9,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ImageController } from './cloudinary/cloundinary.controler';
 import { MoviesModule } from './movies/movies.module';
 import { TheatersModule } from './theaters/theaters.module';
+import { GenresModule } from './genres/genres.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { TheatersModule } from './theaters/theaters.module';
     AuthModule,
     CloudinaryModule,
     MoviesModule,
-    TheatersModule
+    TheatersModule,
+    GenresModule
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],
