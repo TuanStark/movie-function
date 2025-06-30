@@ -110,7 +110,6 @@ model MovieCast {
   id       Int    @id @default(autoincrement())
   movieId  Int
   actorId  Int
-  role     String
 
   movie    Movie  @relation(fields: [movieId], references: [id])
   actor    Actor  @relation(fields: [actorId], references: [id])

@@ -11,6 +11,8 @@ import { MoviesModule } from './movies/movies.module';
 import { TheatersModule } from './theaters/theaters.module';
 import { GenresModule } from './genres/genres.module';
 import { ActorsModule } from './actors/actors.module';
+import { MovieCastsModule } from './movie-casts/movie-casts.module';
+import { MovieGenresModule } from './movie-genres/movie-genres.module';
 
 @Module({
   imports: [
@@ -24,7 +26,9 @@ import { ActorsModule } from './actors/actors.module';
     MoviesModule,
     TheatersModule,
     GenresModule,
-    ActorsModule
+    ActorsModule,
+    MovieCastsModule,
+    MovieGenresModule
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],
