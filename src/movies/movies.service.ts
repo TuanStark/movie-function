@@ -3,12 +3,14 @@ import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MovieGenresService } from 'src/movie-genres/movie-genres.service';
-import { MovieCastsService } from 'src/movie-casts/movie-casts.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { MovieCastsService } from 'src/movie-casts/movie-casts.service';
+import { FindAllDto } from 'src/global/find-all.dto';
 
 @Injectable()
 export class MoviesService {
-  constructor(private prisma: PrismaService,
+  constructor(
+    private prisma: PrismaService,
     private movieGenresService: MovieGenresService,
     private cloudinaryService: CloudinaryService,
     private movieCastsService: MovieCastsService,
@@ -39,16 +41,76 @@ export class MoviesService {
     return movie;
   }
 
-  async findAll() {
-    return this.prisma.movie.findMany({
-      include: {
-        genres: {
-          include: {
-            genre: true,
+  async findAll(query: FindAllDto) {
+    const { 
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if(pageNumber < 1 || limitNumber < 1) {
+      throw new Error('Page and limit must be greater than 0');
+    }
+
+    const take = limitNumber;
+    const skip = (pageNumber - 1) * take;
+
+    const searchUpCase = search.charAt(0).toUpperCase() + search.slice(1);
+    const where = search
+      ? {
+        OR: [
+          { title: { contains: searchUpCase } },
+          { synopsis: { contains: searchUpCase } },
+        ]
+      }
+      : {};
+    const orderBy = {
+      [sortBy]: sortOrder
+    };
+
+    const [movies, total] = await Promise.all([
+      this.prisma.movie.findMany({
+        where: where,
+        orderBy: orderBy,
+        skip,
+        take,
+        include: {
+          showtimes: {
+            include: {
+              movie: true,
+            }
           },
-        },
+          genres: {
+            include: {
+              genre: true,
+            }
+          },
+          casts: {
+            include: {
+              actor: true,
+            }
+          }
+        }
+      }),
+      this.prisma.movie.count({
+        where: where,
+      })
+    ])
+
+    return {
+      data: movies,
+      meta: {
+        total,
+        pageNumber,
+        limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
       },
-    });
+    };
   }
 
   async findOne(id: number) {
@@ -65,6 +127,11 @@ export class MoviesService {
             actor: true,
           },
         },
+        showtimes: {
+          include: {
+            theater: true,
+          },
+        },
       },
     });
 
@@ -77,12 +144,36 @@ export class MoviesService {
 
   async update(id: number, updateMovieDto: UpdateMovieDto) {
     try {
-      return await this.prisma.movie.update({
+      const { genreIds, castIds, ...movieData } = updateMovieDto;
+      
+      // Cập nhật thông tin cơ bản của movie
+      const updatedMovie = await this.prisma.movie.update({
         where: { id },
-        data: updateMovieDto,
+        data: movieData,
       });
+      
+      // Cập nhật thể loại nếu có
+      if (genreIds && genreIds.length > 0) {
+        // Xóa tất cả thể loại cũ
+        await this.prisma.movieGenre.deleteMany({
+          where: { movieId: id },
+        });
+        
+        // Thêm thể loại mới
+        await this.movieGenresService.addGenresToMovie(id, { genreIds });
+      }
+      
+      // Cập nhật diễn viên nếu có
+      if (castIds && castIds.length > 0) {
+        await this.prisma.movieCast.deleteMany({
+          where: { movieId: id },
+        });
+        await this.movieCastsService.addCastsToMovie(id, { castIds });
+      }
+      
+      return updatedMovie;
     } catch (error) {
-      throw new NotFoundException(`Movie with ID ${id} not found`);
+      throw new NotFoundException(`Movie with ID ${id} not found: ${error.message}`);
     }
   }
 
@@ -109,28 +200,28 @@ export class MoviesService {
     }
   }
   
-  async addGenresToMovie(movieId: number, genreIds: number[]) {
-    // Kiểm tra movie có tồn tại không
-    await this.findOne(movieId);
+  // async addGenresToMovie(movieId: number, genreIds: number[]) {
+  //   // Kiểm tra movie có tồn tại không
+  //   await this.findOne(movieId);
     
-    // Tạo dữ liệu để insert
-    const dataToInsert = genreIds.map(genreId => ({
-      movieId,
-      genreId
-    }));
+  //   // Tạo dữ liệu để insert
+  //   const dataToInsert = genreIds.map(genreId => ({
+  //     movieId,
+  //     genreId
+  //   }));
 
-    // Sử dụng createMany để insert nhiều records
-    const result = await this.prisma.movieGenre.createMany({
-      data: dataToInsert,
-      skipDuplicates: true // Bỏ qua các record trùng lặp
-    });
+  //   // Sử dụng createMany để insert nhiều records
+  //   const result = await this.prisma.movieGenre.createMany({
+  //     data: dataToInsert,
+  //     skipDuplicates: true // Bỏ qua các record trùng lặp
+  //   });
 
-    return {
-      created: result.count,
-      movieId,
-      genreIds
-    };
-  }
+  //   return {
+  //     created: result.count,
+  //     movieId,
+  //     genreIds
+  //   };
+  // }
   
   async removeGenresFromMovie(movieId: number, genreIds: number[]) {
     // Kiểm tra movie có tồn tại không
