@@ -1,17 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, HttpStatus, HttpException, Query, UseGuards } from '@nestjs/common';
-import { TheatersService } from './theaters.service';
-import { CreateTheaterDto } from './dto/create-theater.dto';
-import { UpdateTheaterDto } from './dto/update-theater.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, HttpStatus, HttpException, Query } from '@nestjs/common';
+import { ActorsService } from './actors.service';
+import { CreateActorDto } from './dto/create-actor.dto';
+import { UpdateActorDto } from './dto/update-actor.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadedFile } from '@nestjs/common';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { FindAllDto } from 'src/global/find-all.dto';
-import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 
-@Controller('theaters')
-export class TheatersController {
-  constructor(private readonly theatersService: TheatersService) {}
+@Controller('actors')
+export class ActorsController {
+  constructor(private readonly actorsService: ActorsService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -24,10 +24,10 @@ export class TheatersController {
       cb(null, true);
     },
   })) 
-  async create(@Body() createTheaterDto: CreateTheaterDto, @UploadedFile() file: Express.Multer.File) {
+  async create(@Body() CreateActorDto: CreateActorDto, @UploadedFile() file: Express.Multer.File) {
     try {      
-      const theater = await this.theatersService.create(createTheaterDto, file);
-      return new ResponseData(theater, HttpStatus.CREATED, HttpMessage.CREATED);
+      const actors = await this.actorsService.create(CreateActorDto, file);
+      return new ResponseData(actors, HttpStatus.CREATED, HttpMessage.CREATED);
     } catch (error) {
       throw new HttpException(
         new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
@@ -36,12 +36,11 @@ export class TheatersController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: FindAllDto) {
     try {
-      const theaters = await this.theatersService.findAll(query);
-      return new ResponseData(theaters, HttpStatus.OK, HttpMessage.SUCCESS);
+      const actor = await this.actorsService.findAll(query);
+      return new ResponseData(actor, HttpStatus.OK, HttpMessage.SUCCESS);
     } catch (error) {
       throw new HttpException(
         new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
@@ -50,12 +49,11 @@ export class TheatersController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
-      const theater = await this.theatersService.findOne(+id);
-      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+      const actor = await this.actorsService.findOne(+id);
+      return new ResponseData(actor, HttpStatus.OK, HttpMessage.SUCCESS);
     } catch (error) {
       throw new HttpException(
         new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
@@ -75,11 +73,10 @@ export class TheatersController {
       cb(null, true);
     },
   })) 
-  async update(@Param('id') id: string, @Body() updateTheaterDto: UpdateTheaterDto, @UploadedFile() file: Express.Multer.File) {
-    console.log("hello");
+  async update(@Param('id') id: string, @Body() updateActorDto: UpdateActorDto, @UploadedFile() file: Express.Multer.File) {
     try {
-      const theater = await this.theatersService.update(+id, updateTheaterDto, file);
-      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+      const actor = await this.actorsService.update(+id, updateActorDto, file);
+      return new ResponseData(actor, HttpStatus.OK, HttpMessage.SUCCESS);
     } catch (error) {
       throw new HttpException(
         new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
@@ -92,8 +89,8 @@ export class TheatersController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {
-      const theater = await this.theatersService.remove(+id);
-      return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);
+      const actor = await this.actorsService.remove(+id);
+      return new ResponseData(actor, HttpStatus.OK, HttpMessage.SUCCESS);
     } catch (error) {
       throw new HttpException(
         new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
