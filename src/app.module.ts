@@ -13,6 +13,7 @@ import { GenresModule } from './genres/genres.module';
 import { ActorsModule } from './actors/actors.module';
 import { MovieCastsModule } from './movie-casts/movie-casts.module';
 import { MovieGenresModule } from './movie-genres/movie-genres.module';
+import { ShowTimesModule } from './show-times/show-times.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MovieGenresModule } from './movie-genres/movie-genres.module';
     ActorsModule,
     MovieCastsModule,
     MovieGenresModule,
+    ShowTimesModule,
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],
