@@ -28,7 +28,7 @@ import { MovieGenresModule } from './movie-genres/movie-genres.module';
     GenresModule,
     ActorsModule,
     MovieCastsModule,
-    MovieGenresModule
+    MovieGenresModule,
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],

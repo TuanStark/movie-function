@@ -18,6 +18,7 @@ export class CreateMovieDto {
   rating: number;
 
   @IsString()
+  @IsOptional()
   synopsis: string;
 
   @IsString()
@@ -27,15 +28,19 @@ export class CreateMovieDto {
   director: string;
 
   @IsString()
+  @IsOptional()
   writer: string;
 
   @IsString()
+  @IsOptional()
   country: string;
 
   @IsString()
+  @IsOptional()
   language: string;
 
   @IsString()
+  @IsOptional()
   actors: string;
 
   @IsDate()

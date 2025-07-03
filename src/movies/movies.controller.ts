@@ -35,23 +35,15 @@ export class MoviesController {
     @UploadedFiles() files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }
   ) {
     try {
-      // Upload poster image if provided
-      if (files.posterFile && files.posterFile[0]) {
-        const result = await this.cloudinaryService.uploadImage(files.posterFile[0], {
-          folder: 'movieTix',
-        });
-        createMovieDto.posterPath = result.secure_url;
+      // Remove blob URLs from the DTO as they will be replaced by uploaded file URLs
+      if (createMovieDto.posterPath?.startsWith('blob:')) {
+        createMovieDto.posterPath = undefined;
+      }
+      if (createMovieDto.backdropPath?.startsWith('blob:')) {
+        createMovieDto.backdropPath = undefined;
       }
 
-      // Upload backdrop image if provided
-      if (files.backdropFile && files.backdropFile[0]) {
-        const result = await this.cloudinaryService.uploadImage(files.backdropFile[0], {
-          folder: 'movieTix',
-        });
-        createMovieDto.backdropPath = result.secure_url;
-      }
-      
-      const movie = await this.moviesService.create(createMovieDto);
+      const movie = await this.moviesService.create(createMovieDto, files);
       return new ResponseData(movie, HttpStatus.CREATED, HttpMessage.CREATED);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -78,22 +70,6 @@ export class MoviesController {
     @UploadedFiles() files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }
   ) {
     try {
-      // Upload poster image if provided
-      if (files.posterFile && files.posterFile[0]) {
-        const result = await this.cloudinaryService.uploadImage(files.posterFile[0], {
-          folder: 'movieTix',
-        });
-        updateMovieDto.posterPath = result.secure_url;
-      }
-
-      // Upload backdrop image if provided
-      if (files.backdropFile && files.backdropFile[0]) {
-        const result = await this.cloudinaryService.uploadImage(files.backdropFile[0], {
-          folder: 'movieTix',
-        });
-        updateMovieDto.backdropPath = result.secure_url;
-      }
-      
       const movie = await this.moviesService.update(+id, updateMovieDto);
       return new ResponseData(movie, HttpStatus.CREATED, HttpMessage.CREATED);
     } catch (error) {

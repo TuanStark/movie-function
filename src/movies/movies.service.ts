@@ -16,29 +16,70 @@ export class MoviesService {
     private movieCastsService: MovieCastsService,
   ) {}
 
-  async create(createMovieDto: CreateMovieDto) {
-    const { genreIds, castIds, ...movieData } = createMovieDto;
+  private async handleFileUploads(files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }) {
+    const uploadedPaths: { posterPath?: string; backdropPath?: string } = {};
 
-    // Đảm bảo posterPath và backdropPath luôn có giá trị
+    if (files.posterFile && files.posterFile[0]) {
+      const result = await this.cloudinaryService.uploadImage(files.posterFile[0], {
+        folder: 'movieTix',
+      });
+      uploadedPaths.posterPath = result.secure_url;
+    }
+
+    if (files.backdropFile && files.backdropFile[0]) {
+      const result = await this.cloudinaryService.uploadImage(files.backdropFile[0], {
+        folder: 'movieTix',
+      });
+      uploadedPaths.backdropPath = result.secure_url;
+    }
+
+    return uploadedPaths;
+  }
+
+  async create(createMovieDto: CreateMovieDto, files?: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }) {
+    const { genreIds, castIds, ...movieData } = createMovieDto;
+    
+    // Debug logging
+    console.log('Raw createMovieDto:', createMovieDto);
+    console.log('Extracted genreIds:', genreIds, typeof genreIds);
+    console.log('Extracted castIds:', castIds, typeof castIds);
+
+    // Handle file uploads if files are provided
+    const uploadedPaths = files ? await this.handleFileUploads(files) : {};
+  
+    // Combine movie data with uploaded paths and defaults
     const movieDataWithDefaults = {
       ...movieData,
-      posterPath: movieData.posterPath || 'default_poster.jpg',
-      backdropPath: movieData.backdropPath || 'default_backdrop.jpg',
+      ...uploadedPaths,
+      posterPath: uploadedPaths.posterPath || movieData.posterPath || 'default_poster.jpg',
+      backdropPath: uploadedPaths.backdropPath || movieData.backdropPath || 'default_backdrop.jpg',
     };
-
-    const movie = await this.prisma.movie.create({
-      data: movieDataWithDefaults,
+  
+    // Ensure genreIds and castIds are arrays
+    const processedGenreIds = Array.isArray(genreIds) ? genreIds : 
+                            typeof genreIds === 'string' ? JSON.parse(genreIds) : [];
+    const processedCastIds = Array.isArray(castIds) ? castIds : 
+                           typeof castIds === 'string' ? JSON.parse(castIds) : [];
+    
+    console.log('Processed genreIds:', processedGenreIds);
+    console.log('Processed castIds:', processedCastIds);
+  
+    // Dùng transaction
+    return this.prisma.$transaction(async (tx) => {
+      const movie = await tx.movie.create({
+        data: movieDataWithDefaults,
+      });
+  
+      if (processedGenreIds.length > 0) {
+        await this.movieGenresService.addGenresToMovie(movie.id, { genreIds: processedGenreIds });
+      }
+  
+      if (processedCastIds.length > 0) {
+        await this.movieCastsService.addCastsToMovie(movie.id, { castIds: processedCastIds });
+      }
+  
+      return movie;
     });
-
-    if (genreIds && genreIds.length > 0) {
-      await this.movieGenresService.addGenresToMovie(movie.id, { genreIds });
-    }
-
-    if (castIds && castIds.length > 0) {
-      await this.movieCastsService.addCastsToMovie(movie.id, { castIds });
-    }
-
-    return movie;
   }
 
   async findAll(query: FindAllDto) {
