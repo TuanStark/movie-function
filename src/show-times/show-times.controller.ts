@@ -14,7 +14,6 @@ export class ShowTimesController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() createShowTimeDto: CreateShowTimeDto) {
-    console.log('Received DTO:', createShowTimeDto); // Debug log
     const showtime = await this.showTimesService.create(createShowTimeDto);
     return new ResponseData(showtime, HttpStatus.CREATED, HttpMessage.CREATED);
   }
