@@ -34,15 +34,8 @@ export class MoviesController {
     @Body() createMovieDto: CreateMovieDto,
     @UploadedFiles() files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }
   ) {
+    console.log(files);
     try {
-      // Remove blob URLs from the DTO as they will be replaced by uploaded file URLs
-      if (createMovieDto.posterPath?.startsWith('blob:')) {
-        createMovieDto.posterPath = undefined;
-      }
-      if (createMovieDto.backdropPath?.startsWith('blob:')) {
-        createMovieDto.backdropPath = undefined;
-      }
-
       const movie = await this.moviesService.create(createMovieDto, files);
       return new ResponseData(movie, HttpStatus.CREATED, HttpMessage.CREATED);
     } catch (error) {

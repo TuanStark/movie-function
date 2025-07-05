@@ -2,18 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { MovieGenresService } from 'src/movie-genres/movie-genres.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { MovieCastsService } from 'src/movie-casts/movie-casts.service';
 import { FindAllDto } from 'src/global/find-all.dto';
 
 @Injectable()
 export class MoviesService {
   constructor(
     private prisma: PrismaService,
-    private movieGenresService: MovieGenresService,
     private cloudinaryService: CloudinaryService,
-    private movieCastsService: MovieCastsService,
   ) {}
 
   private async handleFileUploads(files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }) {
@@ -40,7 +36,9 @@ export class MoviesService {
     const { genreIds, castIds, ...movieData } = createMovieDto;
     // Handle file uploads if files are provided
     const uploadedPaths = files ? await this.handleFileUploads(files) : {};
-  
+    console.log(genreIds);
+    console.log(castIds);
+
     // Combine movie data with uploaded paths and defaults
     const movieDataWithDefaults = {
       ...movieData,
@@ -48,27 +46,67 @@ export class MoviesService {
       posterPath: uploadedPaths.posterPath || movieData.posterPath || 'default_poster.jpg',
       backdropPath: uploadedPaths.backdropPath || movieData.backdropPath || 'default_backdrop.jpg',
     };
-  
+
     // Ensure genreIds and castIds are arrays
-    const processedGenreIds = Array.isArray(genreIds) ? genreIds : 
-                            typeof genreIds === 'string' ? JSON.parse(genreIds) : [];
-    const processedCastIds = Array.isArray(castIds) ? castIds : 
-                           typeof castIds === 'string' ? JSON.parse(castIds) : [];
-  
+    const processedGenreIds = Array.isArray(genreIds) ? genreIds : typeof genreIds === 'string' ? JSON.parse(genreIds) : [];
+    const processedCastIds = Array.isArray(castIds) ? castIds : typeof castIds === 'string' ? JSON.parse(castIds) : [];
+
     // Dùng transaction
     return this.prisma.$transaction(async (tx) => {
       const movie = await tx.movie.create({
         data: movieDataWithDefaults,
       });
-  
+
+      // Handle genres within the transaction
       if (processedGenreIds.length > 0) {
-        await this.movieGenresService.addGenresToMovie(movie.id, { genreIds: processedGenreIds });
+        // Validate that all genres exist
+        const existingGenres = await tx.genre.findMany({
+          where: { id: { in: processedGenreIds } }
+        });
+
+        if (existingGenres.length !== processedGenreIds.length) {
+          const existingIds = existingGenres.map(g => g.id);
+          const missingIds = processedGenreIds.filter((id: number) => !existingIds.includes(id));
+          throw new BadRequestException(`Không tìm thấy genres với IDs: ${missingIds.join(', ')}`);
+        }
+
+        // Create movie-genre relationships
+        const genreData = processedGenreIds.map((genreId: number) => ({
+          movieId: movie.id,
+          genreId
+        }));
+
+        await tx.movieGenre.createMany({
+          data: genreData,
+          skipDuplicates: true
+        });
       }
-  
+
+      // Handle casts within the transaction
       if (processedCastIds.length > 0) {
-        await this.movieCastsService.addCastsToMovie(movie.id, { castIds: processedCastIds });
+        // Validate that all actors exist
+        const existingCasts = await tx.actor.findMany({
+          where: { id: { in: processedCastIds } }
+        });
+
+        if (existingCasts.length !== processedCastIds.length) {
+          const existingIds = existingCasts.map(c => c.id);
+          const missingIds = processedCastIds.filter((id: number) => !existingIds.includes(id));
+          throw new BadRequestException(`Không tìm thấy casts với IDs: ${missingIds.join(', ')}`);
+        }
+
+        // Create movie-cast relationships
+        const castData = processedCastIds.map((castId: number) => ({
+          movieId: movie.id,
+          actorId: castId
+        }));
+
+        await tx.movieCast.createMany({
+          data: castData,
+          skipDuplicates: true
+        });
       }
-  
+
       return movie;
     });
   }
@@ -175,38 +213,86 @@ export class MoviesService {
   }
 
   async update(id: number, updateMovieDto: UpdateMovieDto) {
-    try {
-      const { genreIds, castIds, ...movieData } = updateMovieDto;
-      
+    const { genreIds, castIds, ...movieData } = updateMovieDto;
+
+    return this.prisma.$transaction(async (tx) => {
+      // Kiểm tra movie có tồn tại không
+      const existingMovie = await tx.movie.findUnique({
+        where: { id },
+      });
+
+      if (!existingMovie) {
+        throw new NotFoundException(`Movie with ID ${id} not found`);
+      }
+
       // Cập nhật thông tin cơ bản của movie
-      const updatedMovie = await this.prisma.movie.update({
+      const updatedMovie = await tx.movie.update({
         where: { id },
         data: movieData,
       });
-      
+
       // Cập nhật thể loại nếu có
       if (genreIds && genreIds.length > 0) {
+        // Validate that all genres exist
+        const existingGenres = await tx.genre.findMany({
+          where: { id: { in: genreIds } }
+        });
+
+        if (existingGenres.length !== genreIds.length) {
+          const existingIds = existingGenres.map(g => g.id);
+          const missingIds = genreIds.filter((id: number) => !existingIds.includes(id));
+          throw new BadRequestException(`Không tìm thấy genres với IDs: ${missingIds.join(', ')}`);
+        }
+
         // Xóa tất cả thể loại cũ
-        await this.prisma.movieGenre.deleteMany({
+        await tx.movieGenre.deleteMany({
           where: { movieId: id },
         });
-        
+
         // Thêm thể loại mới
-        await this.movieGenresService.addGenresToMovie(id, { genreIds });
+        const genreData = genreIds.map((genreId: number) => ({
+          movieId: id,
+          genreId
+        }));
+
+        await tx.movieGenre.createMany({
+          data: genreData,
+          skipDuplicates: true
+        });
       }
-      
+
       // Cập nhật diễn viên nếu có
       if (castIds && castIds.length > 0) {
-        await this.prisma.movieCast.deleteMany({
+        // Validate that all actors exist
+        const existingCasts = await tx.actor.findMany({
+          where: { id: { in: castIds } }
+        });
+
+        if (existingCasts.length !== castIds.length) {
+          const existingIds = existingCasts.map(c => c.id);
+          const missingIds = castIds.filter((id: number) => !existingIds.includes(id));
+          throw new BadRequestException(`Không tìm thấy casts với IDs: ${missingIds.join(', ')}`);
+        }
+
+        // Xóa tất cả diễn viên cũ
+        await tx.movieCast.deleteMany({
           where: { movieId: id },
         });
-        await this.movieCastsService.addCastsToMovie(id, { castIds });
+
+        // Thêm diễn viên mới
+        const castData = castIds.map((castId: number) => ({
+          movieId: id,
+          actorId: castId
+        }));
+
+        await tx.movieCast.createMany({
+          data: castData,
+          skipDuplicates: true
+        });
       }
-      
+
       return updatedMovie;
-    } catch (error) {
-      throw new NotFoundException(`Movie with ID ${id} not found: ${error.message}`);
-    }
+    });
   }
 
   async remove(id: number) {
@@ -231,29 +317,6 @@ export class MoviesService {
       throw new NotFoundException(`Movie with ID ${id} not found`);
     }
   }
-  
-  // async addGenresToMovie(movieId: number, genreIds: number[]) {
-  //   // Kiểm tra movie có tồn tại không
-  //   await this.findOne(movieId);
-    
-  //   // Tạo dữ liệu để insert
-  //   const dataToInsert = genreIds.map(genreId => ({
-  //     movieId,
-  //     genreId
-  //   }));
-
-  //   // Sử dụng createMany để insert nhiều records
-  //   const result = await this.prisma.movieGenre.createMany({
-  //     data: dataToInsert,
-  //     skipDuplicates: true // Bỏ qua các record trùng lặp
-  //   });
-
-  //   return {
-  //     created: result.count,
-  //     movieId,
-  //     genreIds
-  //   };
-  // }
   
   async removeGenresFromMovie(movieId: number, genreIds: number[]) {
     // Kiểm tra movie có tồn tại không
