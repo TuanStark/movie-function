@@ -17,7 +17,7 @@ export class CloudinaryService {
     if (!file) {
       throw new Error('No file provided');
     }
-    if (file.size > 1000000) {
+    if (file.size > 3000000) {
       throw new Error('File size exceeds 1MB limit');
     }
     if (!file.mimetype.startsWith('image')) {
