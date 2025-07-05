@@ -130,9 +130,18 @@ export class BookingService {
         skip,
         take,
         include: {
-          seats: true,
-          showtime: true,
-          user: true
+          seats: {
+            include: {
+              seat: true,
+            },
+          },
+          showtime: {
+            include: {
+              movie: true,
+              theater: true,
+            },
+          },
+          user: true,
         }
       }),
       this.prisma.movie.count({
@@ -210,7 +219,6 @@ export class BookingService {
         user: true
       },
     });
-
     return booking;
   }
 

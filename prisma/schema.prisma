@@ -173,6 +173,8 @@ model Booking {
   bookingDate  DateTime
   bookingCode  String
   status       String
+  paymentMethod String?      @default("CASH")
+  images        String?       @default("images.png")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
