@@ -16,6 +16,7 @@ import { MovieGenresModule } from './movie-genres/movie-genres.module';
 import { ShowTimesModule } from './show-times/show-times.module';
 import { BookingModule } from './booking/booking.module';
 import { SeatsModule } from './seats/seats.module';
+import { ArticleCategoriesModule } from './article-categories/article-categories.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SeatsModule } from './seats/seats.module';
     ShowTimesModule,
     BookingModule,
     SeatsModule,
+    ArticleCategoriesModule,
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],

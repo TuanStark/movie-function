@@ -38,12 +38,6 @@ export class MoviesService {
 
   async create(createMovieDto: CreateMovieDto, files?: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }) {
     const { genreIds, castIds, ...movieData } = createMovieDto;
-    
-    // Debug logging
-    console.log('Raw createMovieDto:', createMovieDto);
-    console.log('Extracted genreIds:', genreIds, typeof genreIds);
-    console.log('Extracted castIds:', castIds, typeof castIds);
-
     // Handle file uploads if files are provided
     const uploadedPaths = files ? await this.handleFileUploads(files) : {};
   
@@ -60,9 +54,6 @@ export class MoviesService {
                             typeof genreIds === 'string' ? JSON.parse(genreIds) : [];
     const processedCastIds = Array.isArray(castIds) ? castIds : 
                            typeof castIds === 'string' ? JSON.parse(castIds) : [];
-    
-    console.log('Processed genreIds:', processedGenreIds);
-    console.log('Processed castIds:', processedCastIds);
   
     // Dùng transaction
     return this.prisma.$transaction(async (tx) => {
