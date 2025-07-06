@@ -36,7 +36,6 @@ export class TheatersController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: FindAllDto) {
     try {
@@ -50,7 +49,6 @@ export class TheatersController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {

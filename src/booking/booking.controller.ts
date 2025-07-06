@@ -33,6 +33,7 @@ export class BookingController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -43,6 +44,7 @@ export class BookingController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findByUser(@Param('id') id: string) {
     try {
@@ -53,6 +55,7 @@ export class BookingController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto) {
     try {
@@ -63,6 +66,7 @@ export class BookingController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async cancel(@Param('id') id: number) {
     try {
@@ -73,6 +77,7 @@ export class BookingController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('showtime/:showtimeId/seats')
   async getAvailableSeats(@Param('showtimeId') showtimeId: number) {
     try {

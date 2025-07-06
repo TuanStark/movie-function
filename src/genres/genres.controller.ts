@@ -25,7 +25,7 @@ export class GenresController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: FindAllDto) {
     try {

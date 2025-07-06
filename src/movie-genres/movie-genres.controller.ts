@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
 import { MovieGenresService } from './movie-genres.service';
 import { CreateMovieGenreDto } from './dto/create-movie-genre.dto';
 import { UpdateMovieGenreDto } from './dto/update-movie-genre.dto';
@@ -6,11 +6,13 @@ import { MovieGenreResponseDto } from './dto/movie-genres-response.dto';
 import { AddGenresToMovieDto } from './dto/add-genres-movie.dto';
 import { FindAllDto } from 'src/global/find-all.dto';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 
 @Controller('movie-genres')
 export class MovieGenresController {
   constructor(private readonly movieGenresService: MovieGenresService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @ApiOperation({ summary: 'Tạo mối quan hệ phim-thể loại mới' })
   @ApiResponse({
@@ -59,6 +61,7 @@ export class MovieGenresController {
     return await this.movieGenresService.findByGenreId(genreId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   @ApiOperation({ summary: 'Cập nhật mối quan hệ phim-thể loại' })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
@@ -70,6 +73,7 @@ export class MovieGenresController {
     return await this.movieGenresService.update(id, updateMovieGenreDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Xóa mối quan hệ phim-thể loại theo ID' })
   @ApiResponse({ status: 200, description: 'Xóa thành công' })
@@ -83,6 +87,7 @@ export class MovieGenresController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete('movie/:movieId/genre/:genreId')
   @ApiOperation({ summary: 'Xóa mối quan hệ phim-thể loại cụ thể' })
   @ApiParam({ name: 'movieId', description: 'ID của phim' })
@@ -100,6 +105,7 @@ export class MovieGenresController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('movie/:movieId/genres')
   @ApiOperation({ summary: 'Thêm nhiều thể loại cho một phim' })
   @ApiParam({ name: 'movieId', description: 'ID của phim' })
@@ -111,6 +117,7 @@ export class MovieGenresController {
     return await this.movieGenresService.addGenresToMovie(movieId, addGenresToMovieDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete('movie/:movieId/genres')
   @ApiOperation({ summary: 'Xóa nhiều thể loại khỏi một phim' })
   @ApiParam({ name: 'movieId', description: 'ID của phim' })
