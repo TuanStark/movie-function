@@ -22,7 +22,7 @@ export class MoviesController {
     { name: 'posterFile', maxCount: 1 },
     { name: 'backdropFile', maxCount: 1 },
   ], {
-    limits: { fileSize: 2000000 }, // 2MB limit
+    limits: { fileSize: 3000000 }, // 2MB limit
     fileFilter: (req, file, cb) => {
       if (!file || !file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
         return cb(new Error('Only image files are allowed!'), false);
@@ -34,7 +34,6 @@ export class MoviesController {
     @Body() createMovieDto: CreateMovieDto,
     @UploadedFiles() files: { posterFile?: Express.Multer.File[], backdropFile?: Express.Multer.File[] }
   ) {
-    console.log(files);
     try {
       const movie = await this.moviesService.create(createMovieDto, files);
       return new ResponseData(movie, HttpStatus.CREATED, HttpMessage.CREATED);

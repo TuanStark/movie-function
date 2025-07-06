@@ -99,6 +99,21 @@ export class ShowTimesService {
     return showtime;
   }
 
+  async getShowtimesByMovieId(movieId: number) {
+    const movie = await this.prisma.movie.findUnique({
+      where: { id: movieId },
+    });
+    if (!movie) {
+      throw new NotFoundException(`Movie with ID ${movieId} not found`);
+    }
+    return await this.prisma.showtime.findMany({
+      where: { movieId },
+      include: {
+        theater: true,
+      },
+    });
+  }
+
   async update(id: number, updateShowTimeDto: UpdateShowTimeDto) {
     // Check if showtime exists
     const existingShowtime = await this.prisma.showtime.findUnique({

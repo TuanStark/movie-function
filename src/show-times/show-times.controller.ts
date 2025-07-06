@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
 import { ShowTimesService } from './show-times.service';
 import { CreateShowTimeDto } from './dto/create-show-time.dto';
 import { UpdateShowTimeDto } from './dto/update-show-time.dto';
@@ -9,7 +9,7 @@ import { HttpMessage } from '../global/globalEnum';
 
 @Controller('show-times')
 export class ShowTimesController {
-  constructor(private readonly showTimesService: ShowTimesService) {}
+  constructor(private readonly showTimesService: ShowTimesService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -26,8 +26,18 @@ export class ShowTimesController {
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: string) {
-    const showtime = await this.showTimesService.findOne(+id);
-    return new ResponseData(showtime, HttpStatus.OK, HttpMessage.SUCCESS);
+    try {
+      const showtime = await this.showTimesService.findOne(+id);
+      return new ResponseData(showtime, HttpStatus.OK, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('movie/:movieId')
+  async getShowtimesByMovieId(@Param('movieId', ParseIntPipe) movieId: string) {
+    const showtimes = await this.showTimesService.getShowtimesByMovieId(+movieId);
+    return new ResponseData(showtimes, HttpStatus.OK, HttpMessage.SUCCESS);
   }
 
   @UseGuards(JwtAuthGuard)
