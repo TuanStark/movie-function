@@ -36,8 +36,8 @@ export class MoviesService {
     const { genreIds, castIds, ...movieData } = createMovieDto;
     // Handle file uploads if files are provided
     const uploadedPaths = files ? await this.handleFileUploads(files) : {};
-    console.log(genreIds);
-    console.log(castIds);
+    // console.log(genreIds);
+    // console.log(castIds);
 
     // Combine movie data with uploaded paths and defaults
     const movieDataWithDefaults = {

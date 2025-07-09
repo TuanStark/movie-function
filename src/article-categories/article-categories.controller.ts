@@ -22,7 +22,6 @@ export class ArticleCategoriesController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() Query: FindAllDto) {
     try {
@@ -33,7 +32,6 @@ export class ArticleCategoriesController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {

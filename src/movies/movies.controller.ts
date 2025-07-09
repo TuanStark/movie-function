@@ -87,7 +87,7 @@ export class MoviesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: string) {
+  async findOne(@Param('id') id: string) {
     try {
       const movie = await this.moviesService.findOne(+id);
       return new ResponseData(movie, HttpStatus.OK, HttpMessage.SUCCESS);
