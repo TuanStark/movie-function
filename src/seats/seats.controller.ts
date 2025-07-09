@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UsePipes, ValidationPipe, UseGuards, HttpException } from '@nestjs/common';
 import { SeatsService } from './seats.service';
 import { CreateSeatDto } from './dto/create-seat.dto';
 import { UpdateSeatDto } from './dto/update-seat.dto';
 import { BulkCreateSeatDto } from './dto/bulk-create-seat.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
+import { ResponseData } from 'src/global/globalClass';
+import { HttpMessage, HttpStatus } from 'src/global/globalEnum';
 
 @Controller('seats')
 export class SeatsController {
@@ -30,7 +32,15 @@ export class SeatsController {
 
   @Get('theater/:theaterId')
   async findByTheater(@Param('theaterId', ParseIntPipe) theaterId: number) {
-    return this.seatsService.getSeatsByTheater(theaterId);
+    try {
+      const seats = await this.seatsService.getSeatsByTheater(theaterId);
+      return new ResponseData(seats, HttpStatus.ACCEPTED, HttpMessage.SUCCESS);
+    } catch (error) {
+      throw new HttpException(
+        new ResponseData(null, HttpStatus.BAD_REQUEST, error.message || HttpMessage.INVALID_INPUT_FORMAT),
+        HttpStatus.BAD_REQUEST
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)

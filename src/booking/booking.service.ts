@@ -1,21 +1,23 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingInput, UpdateBookingInput } from './dto/booking.interface';
 import { FindAllDto } from 'src/global/find-all.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService){}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService
+  ){}
   
-  async createBooking(input: CreateBookingInput) {  
+  async createBooking(input: CreateBookingInput, file?: Express.Multer.File) {
     // 1. Kiểm tra suất chiếu
     const showtime = await this.prisma.showtime.findUnique({
       where: { id: input.showtimeId },
       include: { movie: true, theater: true },
     });
-  
+
     if (!showtime) {
       throw new NotFoundException('Showtime not found');
     }
@@ -54,10 +56,24 @@ export class BookingService {
     // 5. Tính tổng tiền
     const totalPrice = seats.reduce((sum, seat) => sum + seat.price, 0);
   
-    // 6. Tạo mã đặt chỗ
+    // 6. Xử lý upload image nếu có
+    let imagePath = input.images || 'images.png'; // default value
+    if (file) {
+      try {
+        const result = await this.cloudinaryService.uploadImage(file, {
+          folder: 'bookings',
+        });
+        imagePath = result.secure_url;
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        // Không throw error, chỉ sử dụng default image
+      }
+    }
+
+    // 7. Tạo mã đặt chỗ
     const bookingCode = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  
-    // 7. Tạo booking và bookingSeat trong transaction
+
+    // 8. Tạo booking và bookingSeat trong transaction
     const booking = await this.prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -66,7 +82,9 @@ export class BookingService {
           totalPrice,
           bookingDate: new Date(),
           bookingCode,
-          status: 'CONFIRMED',
+          status: 'PENDING',
+          paymentMethod: input.paymentMethod || 'CASH',
+          images: imagePath,
         },
       });
   
@@ -89,8 +107,6 @@ export class BookingService {
     };
   }
   
-  
-
   async findAll(query: FindAllDto) {
     const { 
       page = 1,
@@ -206,11 +222,27 @@ export class BookingService {
     });
   }
 
-  async updateBooking(bookingId: number, input: UpdateBookingInput) {
+  async updateBooking(bookingId: number, input: UpdateBookingInput, file?: Express.Multer.File) {
+    // Xử lý upload image nếu có
+    let imagePath = input.images;
+    if (file) {
+      try {
+        const result = await this.cloudinaryService.uploadImage(file, {
+          folder: 'bookings',
+        });
+        imagePath = result.secure_url;
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        // Không throw error, giữ nguyên image cũ
+      }
+    }
+
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
         status: input.status,
+        paymentMethod: input.paymentMethod,
+        images: imagePath,
         updatedAt: new Date(),
       },
       include: {
