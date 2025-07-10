@@ -83,7 +83,12 @@ export class SeatsService {
         theater: true,
         bookingSeats: {
           include: {
-            booking: true,
+            booking: {
+              include: {
+                user: true,
+                showtime: true,
+              },
+            },
           },
         },
       },

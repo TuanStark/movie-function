@@ -22,7 +22,7 @@ services:
     image: postgres:latest
     container_name: "${PROJECT_NAME}_postgres"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
@@ -32,7 +32,7 @@ services:
     restart: always
     networks:
       my_custom_network:
-        ipv4_address: ${POSTGRES_IP}
+        ipv4_address: ${DATABASE_IP}
 
   adminer:
     image: adminer
