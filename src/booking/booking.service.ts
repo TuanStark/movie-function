@@ -108,7 +108,7 @@ export class BookingService {
         data: {
           userId: input.userId,
           showtimeId: input.showtimeId,
-          totalPrice,
+          totalPrice: totalPrice + showtime.price,
           bookingDate: new Date(),
           bookingCode,
           status: 'PENDING',
