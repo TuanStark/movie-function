@@ -48,6 +48,7 @@ model Movie {
   releaseDate   DateTime
   trailerUrl    String
   upcoming      Boolean
+  type          String        @default("2D") // 2D, 3D, 4D, IMAX
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -141,6 +142,7 @@ model Showtime {
   date       DateTime
   time       String
   price      Float
+  surcharge    Float     @default(0) // Phụ thu (3D, IMAX, giờ cao điểm)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -165,21 +167,42 @@ model Seat {
   @@map("seats")
 }
 
+model Promotion {
+  id           Int       @id @default(autoincrement())
+  name         String
+  discount     Float     // Phần trăm hoặc số tiền giảm
+  startDate    DateTime
+  endDate      DateTime
+  applicableTo String?   // "all", "student", "member", "weekday", etc.
+  code         String?   // Mã khuyến mãi (nếu có)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bookings     Booking[]
+  @@map("promotions")
+}
+
 model Booking {
   id           Int          @id @default(autoincrement())
   userId       Int
   showtimeId   Int
+  promotionId  Int?         // Liên kết với khuyến mãi (nếu có)
   totalPrice   Float
   bookingDate  DateTime
   bookingCode  String
   status       String
-  paymentMethod String?      @default("CASH")
+  fisrtName    String?      @default("")
+  lastName     String?      @default("")
+  email        String?      @default("")
+  phoneNumber  String?      @default("")
+  paymentMethod String?      @default("BANK_TRANSFER")
   images        String?       @default("images.png")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   user         User         @relation(fields: [userId], references: [id])
   showtime     Showtime     @relation(fields: [showtimeId], references: [id])
+  promotion    Promotion?   @relation(fields: [promotionId], references: [id])
   seats        BookingSeat[]
   @@map("bookings")
 }
@@ -198,6 +221,8 @@ model BookingSeat {
   @@unique([bookingId, seatId])
   @@map("bookingSeats")
 }
+
+
 
 model ArticleCategory {
   id         Int       @id @default(autoincrement())

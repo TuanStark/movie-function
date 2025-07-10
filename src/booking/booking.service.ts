@@ -53,10 +53,39 @@ export class BookingService {
       throw new ConflictException(`Seats already booked: ${alreadyBookedIds.join(', ')}`);
     }
   
-    // 5. Tính tổng tiền
-    const totalPrice = seats.reduce((sum, seat) => sum + seat.price, 0);
+    // 5. Lấy thông tin user để kiểm tra role
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 6. Tính tổng tiền cơ bản
+    let totalPrice = seats.reduce((sum, seat) => sum + seat.price, 0);
+
+    // 7. Áp dụng giảm giá cho sinh viên
+    const originalPrice = totalPrice;
+    if (user.role === "student") {
+      totalPrice *= 0.8; // Giảm 20% cho sinh viên
+      console.log(`Student discount applied: ${originalPrice} -> ${totalPrice}`);
+    }
+
+    // 8. Kiểm tra giờ cao điểm và áp dụng phụ thu
+    const showtimeDate = new Date(showtime.date);
+    const showtimeTime = showtime.time;
+    const isPeakHour = showtimeDate.getDay() >= 5 || showtimeTime > "18:00"; // Cuối tuần hoặc buổi tối
+
+    if (isPeakHour) {
+      const priceBeforeSurcharge = totalPrice;
+      totalPrice += 20000; // Phụ thu giờ cao điểm 20,000 VND
+      console.log(`Peak hour surcharge applied: ${priceBeforeSurcharge} -> ${totalPrice}`);
+    }
+
+    console.log(`Final total price: ${totalPrice}`);
   
-    // 6. Xử lý upload image nếu có
+    // 9. Xử lý upload image nếu có
     let imagePath = input.images || 'images.png'; // default value
     if (file) {
       try {
@@ -70,10 +99,10 @@ export class BookingService {
       }
     }
 
-    // 7. Tạo mã đặt chỗ
+    // 10. Tạo mã đặt chỗ
     const bookingCode = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-    // 8. Tạo booking và bookingSeat trong transaction
+    // 11. Tạo booking và bookingSeat trong transaction
     const booking = await this.prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -99,7 +128,7 @@ export class BookingService {
       return newBooking;
     });
   
-    // 8. Trả về kết quả
+    // 12. Trả về kết quả
     return {
       ...booking,
       seats,
