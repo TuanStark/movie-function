@@ -18,6 +18,7 @@ import { BookingModule } from './booking/booking.module';
 import { SeatsModule } from './seats/seats.module';
 import { ArticleCategoriesModule } from './article-categories/article-categories.module';
 import { ArticleModule } from './article/article.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ArticleModule } from './article/article.module';
     SeatsModule,
     ArticleCategoriesModule,
     ArticleModule,
+    PaymentModule,
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],

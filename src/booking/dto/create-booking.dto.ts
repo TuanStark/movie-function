@@ -42,4 +42,29 @@ export class CreateBookingDto {
   @IsString()
   @Type(() => String)
   images?: string;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  phoneNumber?: string;
+
+  @IsOptional()
+  // @IsNumber()
+  @Type(() => Number)
+  promotionId?: number;
 }

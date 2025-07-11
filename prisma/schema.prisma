@@ -204,7 +204,29 @@ model Booking {
   showtime     Showtime     @relation(fields: [showtimeId], references: [id])
   promotion    Promotion?   @relation(fields: [promotionId], references: [id])
   seats        BookingSeat[]
+  payments     Payment[]    // Liên kết với bảng Payment
   @@map("bookings")
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  bookingId     Int       // Liên kết với Booking
+  orderId       String    // orderId gửi tới MoMo
+  transId       String?   // transId từ MoMo (nếu thanh toán thành công)
+  amount        Float     // Số tiền thanh toán
+  paymentMethod String    // Phương thức thanh toán (MOMO, BANK_TRANSFER, etc.)
+  status        String    // PENDING, SUCCESS, FAILED
+  resultCode    Int?      // resultCode từ MoMo (0: thành công, khác: lỗi)
+  message       String?   // Thông báo từ MoMo (nếu có)
+  signature     String?   // Chữ ký từ MoMo (dùng để kiểm tra tính toàn vẹn)
+  requestId     String?   // requestId gửi tới MoMo
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+
+  @@unique([bookingId, orderId])
+  @@map("payments")
 }
 
 model BookingSeat {
@@ -251,3 +273,4 @@ model Article {
   author        User             @relation(fields: [authorId], references: [id])
   @@map("articles")
 } 
+

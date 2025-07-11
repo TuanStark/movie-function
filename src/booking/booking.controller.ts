@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException, UseGuards, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException, UseGuards, Query, UploadedFile, UseInterceptors, Req } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -38,7 +38,70 @@ export class BookingController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
+  @Post('momo')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 3000000 }, // 3MB limit
+    fileFilter: (_req, file, cb) => {
+      if (!file || !file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async createBookingWithMoMo(
+    @Body() createBookingDto: CreateBookingDto,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    console.log("Received MoMo booking data:", createBookingDto);
+    try {
+      const result = await this.bookingService.createBookingWithMoMoPayment(createBookingDto, file);
+      return new ResponseData(result, HttpStatus.CREATED, HttpMessage.CREATED)
+    } catch (error) {
+      console.error("MoMo booking creation error:", error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Post('vnpay')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 3000000 }, // 3MB limit
+    fileFilter: (_req, file, cb) => {
+      if (!file || !file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async createBookingWithVNPay(
+    @Body() createBookingDto: CreateBookingDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any
+  ) {
+    console.log("Received VNPay booking data:", createBookingDto);
+    try {
+      let ipAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || '127.0.0.1';
+
+      // Convert IPv6 localhost to IPv4
+      if (ipAddr === '::1' || ipAddr === '::ffff:127.0.0.1') {
+        ipAddr = '127.0.0.1';
+      }
+
+      // Extract first IP if multiple IPs
+      if (typeof ipAddr === 'string' && ipAddr.includes(',')) {
+        ipAddr = ipAddr.split(',')[0].trim();
+      }
+
+      const result = await this.bookingService.createBookingWithVNPayPayment(createBookingDto, ipAddr, file);
+      return new ResponseData(result, HttpStatus.CREATED, HttpMessage.CREATED)
+    } catch (error) {
+      console.error("VNPay booking creation error:", error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: FindAllDto) {
     try {

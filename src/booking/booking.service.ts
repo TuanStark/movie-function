@@ -3,12 +3,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingInput, UpdateBookingInput } from './dto/booking.interface';
 import { FindAllDto } from 'src/global/find-all.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { PaymentService } from 'src/payment/payment.service';
 
 @Injectable()
 export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cloudinaryService: CloudinaryService
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly paymentService: PaymentService
   ){}
   
   async createBooking(input: CreateBookingInput, file?: Express.Multer.File) {
@@ -108,11 +110,16 @@ export class BookingService {
         data: {
           userId: input.userId,
           showtimeId: input.showtimeId,
+          promotionId: input.promotionId,
           totalPrice: totalPrice + showtime.price,
           bookingDate: new Date(),
           bookingCode,
           status: 'PENDING',
-          paymentMethod: input.paymentMethod || 'CASH',
+          fisrtName: input.firstName || '',
+          lastName: input.lastName || '',
+          email: input.email || '',
+          phoneNumber: input.phoneNumber || '',
+          paymentMethod: input.paymentMethod || 'BANK_TRANSFER',
           images: imagePath,
         },
       });
@@ -134,6 +141,95 @@ export class BookingService {
       seats,
       showtime,
     };
+  }
+
+  async createBookingWithMoMoPayment(input: CreateBookingInput, file?: Express.Multer.File) {
+    // Tạo booking với status PENDING
+    const booking = await this.createBooking(input, file);
+
+    // Tạo MoMo payment request
+    const baseUrl = process.env.BASE_URL || 'http://localhost:8000';
+    const momoPaymentData = {
+      orderId: booking.bookingCode,
+      amount: Math.round(booking.totalPrice), // MoMo requires integer
+      orderInfo: `Thanh toán vé xem phim - ${booking.bookingCode}`,
+      redirectUrl: `${baseUrl}/payment/momo/return`,
+      ipnUrl: `${baseUrl}/payment/momo/callback`,
+      extraData: booking.id.toString(), // Pass booking ID for callback
+    };
+
+    try {
+      const paymentResponse = await this.paymentService.createMoMoPayment(momoPaymentData);
+
+      // Tạo payment record trong database
+      const payment = await this.prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          orderId: booking.bookingCode,
+          amount: Math.round(booking.totalPrice),
+          paymentMethod: 'MOMO',
+          status: 'PENDING',
+          requestId: paymentResponse.requestId,
+        },
+      });
+
+      return {
+        booking,
+        payment: {
+          id: payment.id,
+          payUrl: paymentResponse.payUrl,
+          qrCodeUrl: paymentResponse.qrCodeUrl,
+          deeplink: paymentResponse.deeplink,
+        },
+      };
+    } catch (error) {
+      // If payment creation fails, cancel the booking
+      await this.cancelBooking(booking.id);
+      throw new BadRequestException(`Failed to create payment: ${error.message}`);
+    }
+  }
+
+  async createBookingWithVNPayPayment(input: CreateBookingInput, ipAddr: string, file?: Express.Multer.File) {
+    // Tạo booking với status PENDING
+    const booking = await this.createBooking(input, file);
+
+    // Tạo VNPay payment request
+    const baseUrl = process.env.BASE_URL || 'http://localhost:8000';
+    const vnpayPaymentData = {
+      orderId: booking.bookingCode,
+      amount: Math.round(booking.totalPrice), // VNPay requires integer
+      orderInfo: `PaymentForMovieTicket-${booking.bookingCode}`, // Use English to avoid encoding issues
+      returnUrl: `${baseUrl}/payment/vnpay/return`,
+      ipAddr: ipAddr,
+      locale: 'vn',
+    };
+
+    try {
+      const paymentResponse = await this.paymentService.createVNPayPayment(vnpayPaymentData);
+
+      // Tạo payment record trong database
+      const payment = await this.prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          orderId: booking.bookingCode,
+          amount: Math.round(booking.totalPrice),
+          paymentMethod: 'VNPAY',
+          status: 'PENDING',
+        },
+      });
+
+      return {
+        booking,
+        payment: {
+          id: payment.id,
+          vnpUrl: paymentResponse.vnpUrl,
+        },
+      };
+    } catch (error) {
+      // If payment creation fails, cancel the booking
+      await this.cancelBooking(booking.id);
+      throw new BadRequestException(`Failed to create VNPay payment: ${error.message}`);
+    }
   }
   
   async findAll(query: FindAllDto) {
@@ -187,6 +283,9 @@ export class BookingService {
             },
           },
           user: true,
+          payments: {
+            orderBy: { createdAt: 'desc' }
+          },
         }
       }),
       this.prisma.movie.count({
@@ -221,6 +320,9 @@ export class BookingService {
             seat: true,
           },
         },
+        payments: {
+          orderBy: { createdAt: 'desc' }
+        },
       },
     });
 
@@ -245,6 +347,9 @@ export class BookingService {
           include: {
             seat: true,
           },
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
         },
       },
       orderBy: { bookingDate: 'desc' },
