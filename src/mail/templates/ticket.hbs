@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Xác nhận thanh toán vé thành công</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f4f4; }
+    .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2 { color: #2c3e50; text-align: center; }
+    h3 { color: #34495e; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    td { padding: 12px; border: 1px solid #ddd; }
+    .label { font-weight: bold; background-color: #f9f9f9; }
+    .value { text-align: right; }
+    .footer { margin-top: 20px; font-size: 14px; color: #777; text-align: center; }
+    .success { color: #28a745; text-align: center; font-weight: bold; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Xác nhận thanh toán vé thành công</h2>
+    <p class="success">Chúc mừng {{firstName}} {{lastName}}, bạn đã thanh toán vé thành công!</p>
+    <p>Cảm ơn bạn đã sử dụng dịch vụ của Cinema Booking. Dưới đây là thông tin vé của bạn:</p>
+    <h3>Thông tin vé</h3>
+    <table>
+      <tr><td class="label">Mã đặt vé</td><td class="value">{{bookingCode}}</td></tr>
+      <tr><td class="label">Phim</td><td class="value">{{title}}</td></tr>
+      <tr><td class="label">Ngày chiếu</td><td class="value">{{date}}</td></tr>
+      <tr><td class="label">Giờ chiếu</td><td class="value">{{time}}</td></tr>
+      <tr><td class="label">Phương thức thanh toán</td><td class="value">{{paymentMethod}}</td></tr>
+      <tr><td class="label">Tổng tiền</td><td class="value">{{totalPrice}}k VND</td></tr>
+      <tr><td class="label">Ngày đặt vé</td><td class="value">{{bookingDate}}</td></tr>
+    </table>
+    <p>Vui lòng có mặt tại rạp ít nhất 15 phút trước giờ chiếu và xuất trình mã đặt vé: <strong>{{bookingCode}}</strong>.</p>
+    <p>Nếu bạn cần hỗ trợ, vui lòng liên hệ qua email: support@cinemabooking.com.</p>
+    <div class="footer">
+      <p>Trân trọng,<br>Cinema Booking Team</p>
+    </div>
+  </div>
+</body>
+</html>

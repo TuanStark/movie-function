@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -19,9 +19,38 @@ import { SeatsModule } from './seats/seats.module';
 import { ArticleCategoriesModule } from './article-categories/article-categories.module';
 import { ArticleModule } from './article/article.module';
 import { PaymentModule } from './payment/payment.module';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { MailerModule } from '@nestjs-modules/mailer';
+
 
 @Module({
   imports: [
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('MAIL_HOST'),
+          port: 465,
+          secure: true,
+          auth: {
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: '"No Reply" <modules@nestjs.com>',
+        },
+        template: {
+          dir: process.cwd() + '/src/mail/templates/',
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
+      }),
+      inject: [ConfigService],
+
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -45,4 +74,4 @@ import { PaymentModule } from './payment/payment.module';
   controllers: [AppController, ImageController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

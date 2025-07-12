@@ -1,23 +1,24 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Req,
-  Delete,
   HttpCode,
   HttpStatus as NestHttpStatus,
   ForbiddenException,
+  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDTO } from './dto';
 import { ResponseData } from '../global/globalClass';
 import { HttpStatus, HttpMessage } from '../global/globalEnum';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly mailerService: MailerService,
+  ) {}
 
   @Post('register')
   async register(@Body() createAuthDto: AuthDTO) {
@@ -167,21 +168,14 @@ export class AuthController {
   //   }
   // }
 
-  // @Post('facebook')
-  // async loginFacebook(@Body() dto: { email: string; name: string; facebookId: string }) {
-  //   try {
-  //     return new ResponseData(
-  //       await this.authService.loginFacebook(dto),
-  //       HttpStatus.SUCCESS,
-  //       HttpMessage.SUCCESS,
-  //     );
-  //   } catch (error) {
-  //     return new ResponseData(
-  //       error,
-  //       HttpStatus.SERVER_ERROR,
-  //       HttpMessage.SERVER_ERROR,
-  //     );
-  //   }
-  // }
-
+  @Get('mail')
+  async testMail(){
+    this.mailerService.sendMail({
+      to: 'lecongtuan472004@gmail.com',
+      subject: 'Test Mail',
+      text: 'Hello World',
+      html: '<b>Hello World</b>',
+    })
+    return 'ok';
+  }
 }
