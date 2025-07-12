@@ -441,4 +441,101 @@ export class BookingService {
 
     return availableSeats;
   }
+
+
+  async buildConfirmationUrl(orderId: string, status: 'confirmed' | 'failed'): Promise<string> {
+    try {
+      // Find booking by orderId
+      const booking = await this.prisma.booking.findFirst({
+        where: { bookingCode: orderId },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!booking) {
+        return `http://localhost:3000/confirmation/error?message=Booking not found`;
+      }
+
+      // Get showtime details separately
+      const showtime = await this.prisma.showtime.findUnique({
+        where: { id: booking.showtimeId },
+        include: {
+          movie: true,
+        },
+      });
+
+      if (!showtime) {
+        return `http://localhost:3000/confirmation/error?message=Showtime not found`;
+      }
+
+      // Build simple confirmation URL matching the interface
+      const baseUrl = 'http://localhost:3000/confirmation';
+      const params = new URLSearchParams({
+        title: showtime.movie.title,
+        time: showtime.time,
+        price: showtime.price.toString(),
+        date: showtime.date.toISOString().split('T')[0],
+        paymentMethod: 'VNPAY',
+        bookingDate: booking.createdAt.toISOString().split('T')[0],
+        status: status,
+        totalPrice: booking.totalPrice.toString(),
+        firstName: booking.user.firstName || '',
+        lastName: booking.user.lastName || '',
+        email: booking.user.email || '',
+      });
+
+      return `${baseUrl}/${orderId}?${params.toString()}`;
+    } catch (error) {
+      console.error('Error building confirmation URL:', error);
+      return `http://localhost:3000/confirmation/error?message=Error building confirmation URL`;
+    }
+  }
+
+  async updateVNPayPaymentStatus(vnpParams: any, status: string) {
+    try {
+      const orderId = vnpParams.vnp_TxnRef;
+      const amount = parseInt(vnpParams.vnp_Amount) / 100; // Convert from VND cents
+
+      // Find payment record
+      const payment = await this.prisma.payment.findFirst({
+        where: { orderId: orderId },
+        include: { booking: true }
+      });
+
+      if (!payment) {
+        console.error(`Payment not found for orderId: ${orderId}`);
+        return;
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        // Update payment record
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: status,
+            transId: vnpParams.vnp_TransactionNo || null,
+            resultCode: parseInt(vnpParams.vnp_ResponseCode),
+            message: status === 'SUCCESS' ? 'Payment successful' : 'Payment failed',
+            updatedAt: new Date(),
+          },
+        });
+
+        // Update booking status
+        const bookingStatus = status === 'SUCCESS' ? 'CONFIRMED' : 'CANCELLED';
+        await tx.booking.update({
+          where: { id: payment.bookingId },
+          data: {
+            status: bookingStatus,
+            paymentMethod: 'VNPAY',
+            updatedAt: new Date(),
+          },
+        });
+      });
+
+      console.log(`VNPay payment ${status} for booking ${payment.bookingId}`);
+    } catch (error) {
+      console.error('Error updating VNPay payment status:', error);
+    }
+  }
 }

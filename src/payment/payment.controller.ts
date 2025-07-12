@@ -1,15 +1,17 @@
-import { Controller, Post, Body, HttpStatus, HttpException, Get, Query, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, HttpException, Get, Query, Param, NotFoundException, Res } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto, CreateVNPayPaymentDto, MoMoCallbackDto, VNPayCallbackDto } from './dto/create-payment.dto';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { BookingService } from 'src/booking/booking.service';
 
 @Controller('payment')
 export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly prisma: PrismaService,
+    private readonly bookingService: BookingService,
   ) {}
 
   @Post('momo/create')
@@ -271,113 +273,58 @@ export class PaymentController {
   }
 
   @Get('vnpay/return')
-  async handleVNPayReturn(@Query() query: any) {
+  async handleVNPayReturn(@Query() query: any, @Res() res: any) {
     try {
-      console.log('VNPay Return URL accessed:', query);
+      // console.log('VNPay Return URL accessed:', query);
 
       // Verify signature
       const isValidSignature = this.paymentService.verifyVNPaySignature(query);
 
       if (!isValidSignature) {
-        return `
-          <html>
-            <body>
-              <h2>Lỗi xác thực!</h2>
-              <p>Chữ ký không hợp lệ.</p>
-            </body>
-          </html>
-        `;
+        // Redirect to confirmation page with error status
+        const orderId = query.vnp_TxnRef;
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, 'failed');
+
+        // Use Express redirect instead of HTML meta refresh
+        return res.redirect(redirectUrl);
       }
 
       const { vnp_ResponseCode, vnp_TxnRef, vnp_TransactionStatus } = query;
 
       if (vnp_ResponseCode === '00' && vnp_TransactionStatus === '00') {
         // Update payment status in database
-        await this.updateVNPayPaymentStatus(query, 'SUCCESS');
+        await this.bookingService.updateVNPayPaymentStatus(query, 'SUCCESS');
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(vnp_TxnRef, 'confirmed');
 
-        return `
-          <html>
-            <body>
-              <h2>Thanh toán VNPay thành công!</h2>
-              <p>Mã đơn hàng: ${vnp_TxnRef}</p>
-              <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                }, 3000);
-              </script>
-            </body>
-          </html>
-        `;
+        // Redirect immediately to confirmation page
+        return res.redirect(redirectUrl);
       } else {
         // Update payment status in database
-        await this.updateVNPayPaymentStatus(query, 'FAILED');
+        await this.bookingService.updateVNPayPaymentStatus(query, 'FAILED');
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(vnp_TxnRef, 'failed');
 
-        return `
-          <html>
-            <body>
-              <h2>Thanh toán VNPay thất bại!</h2>
-              <p>Mã đơn hàng: ${vnp_TxnRef}</p>
-              <p>Mã lỗi: ${vnp_ResponseCode}</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                }, 3000);
-              </script>
-            </body>
-          </html>
-        `;
+        // Redirect immediately to confirmation page
+        return res.redirect(redirectUrl);
       }
     } catch (error) {
       console.error('VNPay return error:', error);
-      return '<h2>Có lỗi xảy ra!</h2>';
+      // Redirect to error page
+      return res.redirect('http://localhost:3000/confirmation/error?message=Payment processing error');
     }
   }
 
-  private async updateVNPayPaymentStatus(vnpParams: any, status: string) {
+  @Get('vnpay/test-confirmation/:orderId')
+  async testConfirmationUrl(@Param('orderId') orderId: string, @Query('status') status: 'confirmed' | 'failed' = 'confirmed') {
     try {
-      const orderId = vnpParams.vnp_TxnRef;
-      const amount = parseInt(vnpParams.vnp_Amount) / 100; // Convert from VND cents
-
-      // Find payment record
-      const payment = await this.prisma.payment.findFirst({
-        where: { orderId: orderId },
-        include: { booking: true }
-      });
-
-      if (!payment) {
-        console.error(`Payment not found for orderId: ${orderId}`);
-        return;
-      }
-
-      await this.prisma.$transaction(async (tx) => {
-        // Update payment record
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: status,
-            transId: vnpParams.vnp_TransactionNo || null,
-            resultCode: parseInt(vnpParams.vnp_ResponseCode),
-            message: status === 'SUCCESS' ? 'Payment successful' : 'Payment failed',
-            updatedAt: new Date(),
-          },
-        });
-
-        // Update booking status
-        const bookingStatus = status === 'SUCCESS' ? 'CONFIRMED' : 'CANCELLED';
-        await tx.booking.update({
-          where: { id: payment.bookingId },
-          data: {
-            status: bookingStatus,
-            paymentMethod: 'VNPAY',
-            updatedAt: new Date(),
-          },
-        });
-      });
-
-      console.log(`VNPay payment ${status} for booking ${payment.bookingId}`);
+      const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, status);
+      return new ResponseData({
+        orderId,
+        status,
+        redirectUrl,
+        message: 'Confirmation URL generated successfully'
+      }, HttpStatus.OK, HttpMessage.SUCCESS);
     } catch (error) {
-      console.error('Error updating VNPay payment status:', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }
