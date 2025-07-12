@@ -4,13 +4,15 @@ import { CreateBookingInput, UpdateBookingInput } from './dto/booking.interface'
 import { FindAllDto } from 'src/global/find-all.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PaymentService } from 'src/payment/payment.service';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly paymentService: PaymentService
+    private readonly paymentService: PaymentService,
+    private readonly mailerService: MailerService,
   ){}
   
   async createBooking(input: CreateBookingInput, file?: Express.Multer.File) {
@@ -450,6 +452,11 @@ export class BookingService {
         where: { bookingCode: orderId },
         include: {
           user: true,
+          seats: {
+            include: {
+              seat: true,
+            },
+          },
         },
       });
 
@@ -462,6 +469,7 @@ export class BookingService {
         where: { id: booking.showtimeId },
         include: {
           movie: true,
+          theater: true,
         },
       });
 
@@ -483,6 +491,31 @@ export class BookingService {
         firstName: booking.user.firstName || '',
         lastName: booking.user.lastName || '',
         email: booking.user.email || '',
+      });
+
+      this.mailerService.sendMail({
+        to: booking.user.email,
+        subject: 'Xác nhận thanh toán vé xem phim',
+        template: 'ticket',
+        context: {
+          title: showtime.movie.title,
+          time: showtime.time,
+          price: showtime.price,
+          date: showtime.date.toISOString().split('T')[0],
+          paymentMethod: 'VNPAY',
+          bookingDate: booking.createdAt.toISOString().split('T')[0],
+          status: status,
+          totalPrice: booking.totalPrice,
+          firstName: booking.user.firstName || '',
+          lastName: booking.user.lastName || '',
+          email: booking.user.email || '',
+          bookingCode: booking.bookingCode,
+          theater: showtime.theater.name,
+          seats: booking.seats.map(seat => ({
+            row: seat.seat.row,
+            number: seat.seat.number
+          })),
+        },
       });
 
       return `${baseUrl}/${orderId}?${params.toString()}`;
