@@ -10,11 +10,6 @@ export class UserService {
   constructor(private prisma: PrismaService,
     private cloudinaryService: CloudinaryService
   ) {}
-
-  // create(createUserDto: CreateUserDto) {
-  //   return 'This action adds a new user';
-  // }
-
   async findAll(query: FindAllDto) {
     const { 
       page = 1,

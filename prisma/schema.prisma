@@ -25,6 +25,8 @@ model User {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   status     String    @default("active")
+  codeId     String?
+  codeExpired DateTime?
 
   bookings   Booking[]
   articles   Article[]

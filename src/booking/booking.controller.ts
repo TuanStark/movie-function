@@ -12,7 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 3000000 }, // 2MB limit

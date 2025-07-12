@@ -6,6 +6,9 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from 'src/user/user.service';
 import { CurrentUser } from './types/current-user';
+import { MailerService } from '@nestjs-modules/mailer';
+import * as dayjs from 'dayjs';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +17,7 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private userService: UserService,
+    private mailerService: MailerService,
   ) {}
 
   async register(dto: AuthDTO) {
@@ -30,8 +34,8 @@ export class AuthService {
 
     // Hash mật khẩu
     const hash = await argon.hash(password);
-
-    // Tạo user
+    const codeId = uuidv4();
+;    // Tạo user
     try {
       const user = await this.prisma.user.create({
         data: {
@@ -39,13 +43,20 @@ export class AuthService {
           password: hash,
           firstName: firstName || '',
           lastName: lastName || '',
-          role: "USER"
+          role: "USER",
+          status: "active",
+          codeId: codeId,
+          codeExpired: dayjs().add(1, 'day').toDate(),
         },
-        select: {
-          id: true,
-          email: true,
-          createdAt: true,
-          updatedAt: true,
+      });
+
+      this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Activate your account at @movieTix',
+        template: 'register',
+        context: {
+          name: user.firstName ?? user.lastName ?? user.email,
+          activationCode: codeId,
         },
       });
       return user;
@@ -57,23 +68,14 @@ export class AuthService {
   }
 
   async login(authDto: AuthDTO) {
-    // find user by email
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: authDto.email,
-      },
-    });
-
+    // Validate user credentials
+    const user = await this.validateUser(authDto.email, authDto.password);
+    
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
 
-    // compare password
-    const isPasswordMatch = await argon.verify(user.password, authDto.password);
-    if (!isPasswordMatch) {
-      throw new ForbiddenException('Incorrect password');
-    }
-
+    // Generate tokens
     return await this.signJwtToken(user.id, user.email);
   }
 
@@ -129,6 +131,30 @@ export class AuthService {
       return this.signJwtToken(userId, email);
     } catch (error) {
       throw new ForbiddenException('Invalid refresh token');
+    }
+  }
+
+  async validateUser(email: string, password: string) {
+    try {
+      const user = await this.userService.findByEmail(email);
+      if (!user) {
+        console.log('User not found:', email);
+        return null;
+      }
+
+      const isPasswordValid = await argon.verify(user.password, password);
+      if (!isPasswordValid) {
+        console.log('Invalid password for user:', email);
+        return null;
+      }
+      
+      // Return user without password
+      const { password: _, ...result } = user;
+      console.log('User validated successfully:', email);
+      return result;
+    } catch (error) {
+      console.error('Error validating user:', error);
+      return null;
     }
   }
 

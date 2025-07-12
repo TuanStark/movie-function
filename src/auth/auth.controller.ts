@@ -6,12 +6,15 @@ import {
   HttpStatus as NestHttpStatus,
   ForbiddenException,
   Get,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDTO } from './dto';
+import { AuthDTO, LoginDTO } from './dto';
 import { ResponseData } from '../global/globalClass';
 import { HttpStatus, HttpMessage } from '../global/globalEnum';
 import { MailerService } from '@nestjs-modules/mailer';
+import { LocalAuthGuard } from './guard';
 
 @Controller('auth')
 export class AuthController {
@@ -69,50 +72,36 @@ export class AuthController {
       );
     }
   }
+
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() createAuthDto: AuthDTO) {
+  // @HttpCode(NestHttpStatus.OK)
+  async login(@Body() loginDto: LoginDTO, @Req() req: any) {
     try {
-      const result = await this.authService.login(createAuthDto);
-      return new ResponseData(result, HttpStatus.SUCCESS, HttpMessage.SUCCESS);
+      // LocalAuthGuard đã validate user, user info có trong req.user
+      const user = req.user;
+      const tokens = await this.authService.signJwtToken(user.id, user.email);
+      
+      return new ResponseData({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role
+        },
+        ...tokens
+      }, HttpStatus.SUCCESS, HttpMessage.SUCCESS);
     } catch (error) {
-      if (error instanceof ForbiddenException) {
-        if (error.message.includes('Invalid credentials')) {
-          return new ResponseData(
-            null,
-            HttpStatus.UNAUTHORIZED,
-            HttpMessage.INVALID_CREDENTIALS,
-          );
-        }
-        if (error.message.includes('Incorrect password')) {
-          return new ResponseData(
-            null,
-            HttpStatus.UNAUTHORIZED,
-            HttpMessage.INVALID_CREDENTIALS,
-          );
-        }
-        return new ResponseData(
-          null,
-          HttpStatus.FORBIDDEN,
-          HttpMessage.ACCESS_DENIED,
-        );
-      }
-
-      // Handle validation errors
-      if (error.status === 400) {
-        return new ResponseData(
-          error.response,
-          HttpStatus.VALIDATION_ERROR,
-          HttpMessage.VALIDATION_ERROR,
-        );
-      }
-
       return new ResponseData(
-        error,
-        HttpStatus.SERVER_ERROR,
-        HttpMessage.SERVER_ERROR,
+        null,
+        HttpStatus.UNAUTHORIZED,
+        HttpMessage.INVALID_CREDENTIALS
       );
     }
   }
+
+
 
   @Post('refresh')
   @HttpCode(NestHttpStatus.OK)

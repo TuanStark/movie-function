@@ -17,3 +17,13 @@ export class AuthDTO {
   @IsOptional()
   lastName?: string;
 }
+
+export class LoginDTO {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}

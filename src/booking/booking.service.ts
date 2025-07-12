@@ -511,7 +511,7 @@ export class BookingService {
           email: booking.user.email || '',
           bookingCode: booking.bookingCode,
           theater: showtime.theater.name,
-          seats: booking.seats.map(seat => ({
+          seats: booking.seats.map((seat: any) => ({
             row: seat.seat.row,
             number: seat.seat.number
           })),
