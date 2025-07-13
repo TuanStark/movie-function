@@ -9,9 +9,10 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 export class UserService {
   constructor(private prisma: PrismaService,
     private cloudinaryService: CloudinaryService
-  ) {}
+  ) { }
+
   async findAll(query: FindAllDto) {
-    const { 
+    const {
       page = 1,
       limit = 10,
       search = '',
@@ -22,7 +23,7 @@ export class UserService {
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
 
-    if(pageNumber < 1 || limitNumber < 1) {
+    if (pageNumber < 1 || limitNumber < 1) {
       throw new Error('Page and limit must be greater than 0');
     }
 
@@ -69,16 +70,11 @@ export class UserService {
   async findOne(id: number) {
     return this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        avatar: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      include: {
+        bookings: true,
+        articles: true,
+        movieReviews: true,
+      }
     });
   }
 

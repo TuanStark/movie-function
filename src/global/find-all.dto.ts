@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsIn, IsArray } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class FindAllDto {
   @IsOptional()
@@ -18,4 +19,17 @@ export class FindAllDto {
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map(id => parseInt(id, 10));
+    }
+    return value;
+  })
+  genreIds?: number[];
+
+  @IsOptional()
+  upcoming?: boolean;
 }

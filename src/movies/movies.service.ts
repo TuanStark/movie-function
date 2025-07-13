@@ -112,12 +112,14 @@ export class MoviesService {
   }
 
   async findAll(query: FindAllDto) {
-    const { 
+    const {
       page = 1,
       limit = 10,
       search = '',
       sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      genreIds,
+      upcoming,
     } = query;
 
     const pageNumber = Number(page);
@@ -131,22 +133,38 @@ export class MoviesService {
     const skip = (pageNumber - 1) * take;
 
     const searchUpCase = search.charAt(0).toUpperCase() + search.slice(1);
-    const where = search
-      ? {
-        OR: [
-          { title: { contains: searchUpCase } },
-          { synopsis: { contains: searchUpCase } },
-        ]
-      }
-      : {};
+
+    // Build where condition
+    const where: any = {};
+
+    // Add search condition
+    if (search) {
+      where.OR = [
+        { title: { contains: searchUpCase } },
+        { synopsis: { contains: searchUpCase } },
+      ];
+    }
+
+    // Add genre filter condition
+    if (genreIds && genreIds.length > 0) {
+      where.genres = {
+        some: {
+          genreId: { in: genreIds }
+        }
+      };
+    }
+    if (upcoming !== undefined) {
+      where.upcoming = upcoming;
+    }
+
     const orderBy = {
       [sortBy]: sortOrder
     };
 
     const [movies, total] = await Promise.all([
       this.prisma.movie.findMany({
-        where: where,
-        orderBy: orderBy,
+        where,
+        orderBy,
         skip,
         take,
         include: {
@@ -168,7 +186,7 @@ export class MoviesService {
         }
       }),
       this.prisma.movie.count({
-        where: where,
+        where,
       })
     ])
 

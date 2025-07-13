@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthDTO, LoginDTO } from './dto';
+import { AuthDTO } from './dto';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -67,9 +67,7 @@ export class AuthService {
     }
   }
 
-  async login(user : any) {
-    console.log('User validated successfully:', user);
-    
+  async login(user : any) {    
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
