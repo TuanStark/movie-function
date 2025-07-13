@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthDTO } from './dto';
+import { AuthDTO, LoginDTO } from './dto';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -67,26 +67,26 @@ export class AuthService {
     }
   }
 
-  async login(authDto: AuthDTO) {
-    // Validate user credentials
-    const user = await this.validateUser(authDto.email, authDto.password);
+  async login(user : any) {
+    console.log('User validated successfully:', user);
     
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
 
     // Generate tokens
-    return await this.signJwtToken(user.id, user.email);
+    const token = await this.signJwtToken(user);
+    return token;
   }
 
   //now convert to an object, not string
   async signJwtToken(
-    userId: number,
-    email: string,
+    user
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = {
-      sub: userId,
-      email,
+      sub: user.id,
+      email: user.email,
+      role: user.role,
     };
 
     // Generate access token (short-lived)
@@ -128,7 +128,7 @@ export class AuthService {
       }
 
       // Generate new tokens
-      return this.signJwtToken(userId, email);
+      return this.signJwtToken(user);
     } catch (error) {
       throw new ForbiddenException('Invalid refresh token');
     }
@@ -144,14 +144,12 @@ export class AuthService {
 
       const isPasswordValid = await argon.verify(user.password, password);
       if (!isPasswordValid) {
-        console.log('Invalid password for user:', email);
         return null;
       }
       
       // Return user without password
       const { password: _, ...result } = user;
-      console.log('User validated successfully:', email);
-      return result;
+      return user;
     } catch (error) {
       console.error('Error validating user:', error);
       return null;

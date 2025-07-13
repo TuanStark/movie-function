@@ -13,14 +13,12 @@ import { AuthService } from './auth.service';
 import { AuthDTO, LoginDTO } from './dto';
 import { ResponseData } from '../global/globalClass';
 import { HttpStatus, HttpMessage } from '../global/globalEnum';
-import { MailerService } from '@nestjs-modules/mailer';
 import { LocalAuthGuard } from './guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly mailerService: MailerService,
   ) {}
 
   @Post('register')
@@ -75,23 +73,13 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  // @HttpCode(NestHttpStatus.OK)
-  async login(@Body() loginDto: LoginDTO, @Req() req: any) {
+  async login(@Req() req: any) {
     try {
       // LocalAuthGuard đã validate user, user info có trong req.user
       const user = req.user;
-      const tokens = await this.authService.signJwtToken(user.id, user.email);
+      const response = await this.authService.login(user);
       
-      return new ResponseData({
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role
-        },
-        ...tokens
-      }, HttpStatus.SUCCESS, HttpMessage.SUCCESS);
+      return new ResponseData(response, HttpStatus.SUCCESS, HttpMessage.SUCCESS);
     } catch (error) {
       return new ResponseData(
         null,
@@ -156,15 +144,4 @@ export class AuthController {
   //     );
   //   }
   // }
-
-  @Get('mail')
-  async testMail(){
-    this.mailerService.sendMail({
-      to: 'lecongtuan472004@gmail.com',
-      subject: 'Test Mail',
-      text: 'Hello World',
-      html: '<b>Hello World</b>',
-    })
-    return 'ok';
-  }
 }
