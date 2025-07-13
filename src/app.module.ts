@@ -19,6 +19,7 @@ import { SeatsModule } from './seats/seats.module';
 import { ArticleCategoriesModule } from './article-categories/article-categories.module';
 import { ArticleModule } from './article/article.module';
 import { PaymentModule } from './payment/payment.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailerModule } from '@nestjs-modules/mailer';
 
@@ -70,6 +71,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
     ArticleCategoriesModule,
     ArticleModule,
     PaymentModule,
+    DashboardModule,
   ],
   controllers: [AppController, ImageController],
   providers: [AppService],
