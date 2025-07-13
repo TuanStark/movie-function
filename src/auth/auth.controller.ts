@@ -25,6 +25,7 @@ export class AuthController {
   async register(@Body() createAuthDto: AuthDTO) {
     try {
       const user = await this.authService.register(createAuthDto);
+      console.log('User created successfully:', user);
       return new ResponseData(user, HttpStatus.CREATED, HttpMessage.CREATED);
     } catch (error) {
       if (error instanceof ForbiddenException) {
@@ -67,6 +68,20 @@ export class AuthController {
         error,
         HttpStatus.SERVER_ERROR,
         HttpMessage.SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('check-code')
+  async checkCode(@Body() body: { codeId: string, id: string } ) {
+    try {
+      const user = await this.authService.handleActive(body.codeId, +body.id);
+      return new ResponseData(user, HttpStatus.SUCCESS, HttpMessage.SUCCESS);
+    } catch (error) {
+      return new ResponseData(
+        null,
+        HttpStatus.NOT_FOUND,
+        HttpMessage.NOT_FOUND,
       );
     }
   }

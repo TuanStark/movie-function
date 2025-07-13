@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthDTO, LoginDTO } from './dto';
 import * as argon from 'argon2';
@@ -44,9 +44,9 @@ export class AuthService {
           firstName: firstName || '',
           lastName: lastName || '',
           role: "USER",
-          status: "active",
+          status: "unactive",
           codeId: codeId,
-          codeExpired: dayjs().add(1, 'day').toDate(),
+          codeExpired: dayjs().add(1, 'minute').toDate(),
         },
       });
 
@@ -161,5 +161,31 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found!');
     const currentUser: CurrentUser = { id: user.id, role: user.role };
     return currentUser;
+  }
+
+  async handleActive(codeId: string, id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { 
+        id: id,
+        codeId: codeId,
+       },
+    });
+    if (!user) {
+      throw new BadRequestException('Khong tìm thấy người dùng');
+    }
+    if (user.codeId !== codeId) {
+      throw new BadRequestException('Mã xác thực không chính xác');
+    }
+    const isBeforeCheck = dayjs().isBefore(user.codeExpired);
+    if (!isBeforeCheck) {
+      throw new BadRequestException('Mã xác thực đã hết hạn');
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        status: 'active'
+      },
+    });
+    return user;
   }
 }
