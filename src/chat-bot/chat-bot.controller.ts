@@ -11,6 +11,7 @@ export class ChatBotController {
 
   @Post()
   async ask(@Body('question') question: string) {
+    console.log(question);
     const sql = await this.chatBotService.generateSQL(question);
     try {
       const data = await this.prisma.$queryRawUnsafe(sql);

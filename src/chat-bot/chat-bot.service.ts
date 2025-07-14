@@ -57,6 +57,7 @@ export class ChatBotService {
       Dữ liệu từ cơ sở dữ liệu: ${JSON.stringify(sqlData, null, 2)}
 
       Hướng dẫn trả lời:
+      - Trả lời các câu xin chào bằng các thứ tiếng khác nhau của người dùng
       - Trả lời bằng tiếng Việt tự nhiên, thân thiện, ngắn gọn, dễ hiểu,không cần liệt kê phim 
       - Nếu không có dữ liệu, thông báo lịch sự và gợi ý câu hỏi khác
 
