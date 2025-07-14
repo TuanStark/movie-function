@@ -6,12 +6,15 @@ import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { FindAllDto } from 'src/global/find-all.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
 
 @Controller('genres')
 export class GenresController {
   constructor(private readonly genresService: GenresService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post()
   async create(@Body() createGenreDto: CreateGenreDto) {
     try {
@@ -38,7 +41,7 @@ export class GenresController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+ 
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -52,7 +55,8 @@ export class GenresController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateGenreDto: UpdateGenreDto) {
     try {
@@ -66,7 +70,8 @@ export class GenresController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return await this.genresService.remove(+id);

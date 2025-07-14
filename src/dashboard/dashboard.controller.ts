@@ -3,12 +3,16 @@ import { DashboardService } from './dashboard.service';
 import { ResponseData } from '../global/globalClass';
 import { HttpMessage } from '../global/globalEnum';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth/jwt-auth.guard';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get()
   async getDashboardStats() {
     try {
@@ -19,6 +23,8 @@ export class DashboardController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('movies')
   async getMovieStats() {
     try {
@@ -29,6 +35,8 @@ export class DashboardController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('users')
   async getUserStats() {
     try {
@@ -39,6 +47,8 @@ export class DashboardController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('bookings')
   async getBookingStats() {
     try {
@@ -49,6 +59,8 @@ export class DashboardController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('revenue')
   async getRevenueStats() {
     try {

@@ -6,12 +6,15 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth/jwt-auth.guard';
 import { FindAllDto } from '../global/find-all.dto';
 import { ResponseData } from '../global/globalClass';
 import { HttpMessage } from '../global/globalEnum';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
+import { Roles } from 'src/auth/decorator/role.decorator';
 
 @Controller('show-times')
 export class ShowTimesController {
   constructor(private readonly showTimesService: ShowTimesService) { }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post()
   async create(@Body() createShowTimeDto: CreateShowTimeDto) {
     const showtime = await this.showTimesService.create(createShowTimeDto);
@@ -40,7 +43,8 @@ export class ShowTimesController {
     return new ResponseData(showtimes, HttpStatus.OK, HttpMessage.SUCCESS);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: string,
@@ -50,7 +54,8 @@ export class ShowTimesController {
     return new ResponseData(showtime, HttpStatus.OK, HttpMessage.UPDATED);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: string) {
     const showtime = await this.showTimesService.remove(+id);

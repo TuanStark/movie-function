@@ -1,10 +1,11 @@
-import { Controller, Post, Body, HttpStatus, HttpException, Get, Query, Param, NotFoundException, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, HttpException, Get, Query, Param, NotFoundException, Res, UseGuards } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto, CreateVNPayPaymentDto, MoMoCallbackDto, VNPayCallbackDto } from './dto/create-payment.dto';
 import { ResponseData } from 'src/global/globalClass';
 import { HttpMessage } from 'src/global/globalEnum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { BookingService } from 'src/booking/booking.service';
+import { JwtAuthGuard } from 'src/auth/guard';
 
 @Controller('payment')
 export class PaymentController {
@@ -14,6 +15,7 @@ export class PaymentController {
     private readonly bookingService: BookingService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('momo/create')
   async createMoMoPayment(@Body() createPaymentDto: CreatePaymentDto) {
     try {
@@ -24,6 +26,7 @@ export class PaymentController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('vnpay/create')
   async createVNPayPayment(@Body() createVNPayPaymentDto: CreateVNPayPaymentDto) {
     try {
@@ -34,6 +37,7 @@ export class PaymentController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('vnpay/verify')
   async verifyVNPaySignature(@Body() vnpParams: any) {
     try {
@@ -133,6 +137,7 @@ export class PaymentController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('momo/callback')
   async handleMoMoCallback(@Body() callbackData: MoMoCallbackDto) {
     try {

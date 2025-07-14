@@ -7,6 +7,8 @@ import { HttpMessage } from '../global/globalEnum';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 import { FindAllDto } from 'src/global/find-all.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
+import { Roles } from 'src/auth/decorator/role.decorator';
 
 @Controller('booking')
 export class BookingController {
@@ -38,7 +40,7 @@ export class BookingController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('momo')
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 3000000 }, // 3MB limit
@@ -63,7 +65,7 @@ export class BookingController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('vnpay')
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 3000000 }, // 3MB limit
@@ -101,7 +103,7 @@ export class BookingController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: FindAllDto) {
     try {
@@ -134,7 +136,8 @@ export class BookingController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image', {
     limits: { fileSize: 2000000 }, // 2MB limit
@@ -158,7 +161,8 @@ export class BookingController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete(':id')
   async cancel(@Param('id') id: number) {
     try {

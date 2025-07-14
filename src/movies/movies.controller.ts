@@ -8,6 +8,8 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth/jwt-auth.guard';
 import { ResponseData } from '../global/globalClass';
 import { HttpMessage } from '../global/globalEnum';
 import { FindAllDto } from 'src/global/find-all.dto';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
 
 @Controller('movies')
 export class MoviesController {
@@ -16,7 +18,8 @@ export class MoviesController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post()
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'posterFile', maxCount: 1 },
@@ -42,7 +45,8 @@ export class MoviesController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch(':id')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'posterFile', maxCount: 1 },
@@ -69,7 +73,8 @@ export class MoviesController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: string) {
     const movie = await this.moviesService.remove(+id);

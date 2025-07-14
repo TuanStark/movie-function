@@ -9,6 +9,8 @@ import { GetUser } from 'src/auth/decorator/user.decorator';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth/jwt-auth.guard';
 import { FindAllDto } from 'src/global/find-all.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
 
 @Controller('user')
 export class UserController {
@@ -20,7 +22,8 @@ export class UserController {
     return this.userService.findOne(req.user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN') // Chỉ role 'admin' được truy cập
   @Get('all')
   async findAll(@Query() query: FindAllDto) {
     try {
