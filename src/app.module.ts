@@ -22,6 +22,9 @@ import { PaymentModule } from './payment/payment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { ChatBotModule } from './chat-bot/chat-bot.module';
+import { ChatBotController } from './chat-bot/chat-bot.controller';
+import { ChatBotService } from './chat-bot/chat-bot.service';
 
 
 @Module({
@@ -72,8 +75,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
     ArticleModule,
     PaymentModule,
     DashboardModule,
+    ChatBotModule,
   ],
-  controllers: [AppController, ImageController],
-  providers: [AppService],
+  controllers: [AppController, ImageController, ChatBotController],
+  providers: [AppService, ChatBotService],
 })
 export class AppModule { }
