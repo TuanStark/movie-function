@@ -25,6 +25,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ChatBotModule } from './chat-bot/chat-bot.module';
 import { ChatBotController } from './chat-bot/chat-bot.controller';
 import { ChatBotService } from './chat-bot/chat-bot.service';
+import { GeminiModule } from './gemini/gemini.module';
 
 
 @Module({
@@ -76,6 +77,7 @@ import { ChatBotService } from './chat-bot/chat-bot.service';
     PaymentModule,
     DashboardModule,
     ChatBotModule,
+    GeminiModule,
   ],
   controllers: [AppController, ImageController, ChatBotController],
   providers: [AppService, ChatBotService],

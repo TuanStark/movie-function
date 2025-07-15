@@ -9,29 +9,9 @@ export class ChatBotController {
     private readonly prisma: PrismaService,
   ) {}
 
-  @Post()
-  async ask(@Body('question') question: string) {
-    console.log(question);
-    const sql = await this.chatBotService.generateSQL(question);
-    try {
-      const data = await this.prisma.$queryRawUnsafe(sql);
-
-      // Tạo câu trả lời bằng tiếng Việt cho dữ liệu
-      const answer = await this.chatBotService.answerQuestion(question, data as any[]);
-
-      return {
-        answer,
-        sql,
-        data
-      };
-    } catch (error) {
-      return {
-        answer: 'Xin lỗi, tôi không thể trả lời câu hỏi này. Vui lòng thử lại với câu hỏi khác.',
-        sql,
-        error: 'Lỗi khi chạy SQL',
-        detail: error.message
-      };
-    }
+   @Post()
+  async handleChat(@Body('message') message: string) {
+    return this.chatBotService.processUserQuery(message);
   }
 
 }
