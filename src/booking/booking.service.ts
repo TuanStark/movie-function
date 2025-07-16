@@ -571,4 +571,52 @@ export class BookingService {
       console.error('Error updating VNPay payment status:', error);
     }
   }
+
+  async updateMoMoPaymentStatus(momoParams: any, status: string) {
+    try {
+      const orderId = momoParams.orderId;
+      const amount = parseInt(momoParams.amount);
+
+      // Find payment record
+      const payment = await this.prisma.payment.findFirst({
+        where: { orderId: orderId },
+        include: { booking: true }
+      });
+
+      if (!payment) {
+        console.error(`Payment not found for orderId: ${orderId}`);
+        return;
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        // Update payment record
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: status,
+            transId: momoParams.transId || null,
+            resultCode: parseInt(momoParams.resultCode),
+            message: status === 'SUCCESS' ? 'Payment successful' : 'Payment failed',
+            signature: momoParams.signature || null,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Update booking status
+        const bookingStatus = status === 'SUCCESS' ? 'CONFIRMED' : 'CANCELLED';
+        await tx.booking.update({
+          where: { id: payment.bookingId },
+          data: {
+            status: bookingStatus,
+            paymentMethod: 'MOMO',
+            updatedAt: new Date(),
+          },
+        });
+      });
+
+      console.log(`MoMo payment ${status} for booking ${payment.bookingId}`);
+    } catch (error) {
+      console.error('Error updating MoMo payment status:', error);
+    }
+  }
 }

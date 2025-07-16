@@ -137,7 +137,7 @@ export class PaymentController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Post('momo/callback')
   async handleMoMoCallback(@Body() callbackData: MoMoCallbackDto) {
     try {
@@ -234,102 +234,82 @@ export class PaymentController {
   }
 
   @Get('momo/return')
-  async handleMoMoReturn(@Query() query: any) {
+  async handleMoMoReturn(@Query() query: any, @Res() res: any) {
     try {
       console.log('MoMo Return URL accessed:', query);
 
-      const { resultCode, orderId, message } = query;
+      const isValidSignature = this.paymentService.verifyMoMoSignature(query);
+
+      if (!isValidSignature) {
+        const orderId = query.orderId;
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, 'failed');
+
+        return res.redirect(redirectUrl);
+      }
+
+      const { resultCode, orderId } = query;
 
       if (resultCode === '0') {
-        return `
-          <html>
-            <body>
-              <h2>Thanh toán MoMo thành công!</h2>
-              <p>Mã đơn hàng: ${orderId}</p>
-              <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                }, 3000);
-              </script>
-            </body>
-          </html>
-        `;
+        await this.bookingService.updateMoMoPaymentStatus(query, 'SUCCESS');
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, 'confirmed');
+
+        return res.redirect(redirectUrl);
       } else {
-        return `
-          <html>
-            <body>
-              <h2>Thanh toán MoMo thất bại!</h2>
-              <p>Mã đơn hàng: ${orderId}</p>
-              <p>Lý do: ${message}</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                }, 3000);
-              </script>
-            </body>
-          </html>
-        `;
+        await this.bookingService.updateMoMoPaymentStatus(query, 'FAILED');
+        const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, 'failed');
+
+        return res.redirect(redirectUrl);
       }
     } catch (error) {
       console.error('MoMo return error:', error);
-      return '<h2>Có lỗi xảy ra!</h2>';
+      return res.redirect('http://localhost:3000/confirmation/error?message=Payment processing error');
     }
   }
 
   @Get('vnpay/return')
   async handleVNPayReturn(@Query() query: any, @Res() res: any) {
     try {
-      // console.log('VNPay Return URL accessed:', query);
 
-      // Verify signature
       const isValidSignature = this.paymentService.verifyVNPaySignature(query);
 
       if (!isValidSignature) {
-        // Redirect to confirmation page with error status
         const orderId = query.vnp_TxnRef;
         const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, 'failed');
 
-        // Use Express redirect instead of HTML meta refresh
         return res.redirect(redirectUrl);
       }
 
       const { vnp_ResponseCode, vnp_TxnRef, vnp_TransactionStatus } = query;
 
       if (vnp_ResponseCode === '00' && vnp_TransactionStatus === '00') {
-        // Update payment status in database
         await this.bookingService.updateVNPayPaymentStatus(query, 'SUCCESS');
         const redirectUrl = await this.bookingService.buildConfirmationUrl(vnp_TxnRef, 'confirmed');
 
-        // Redirect immediately to confirmation page
         return res.redirect(redirectUrl);
       } else {
-        // Update payment status in database
         await this.bookingService.updateVNPayPaymentStatus(query, 'FAILED');
         const redirectUrl = await this.bookingService.buildConfirmationUrl(vnp_TxnRef, 'failed');
 
-        // Redirect immediately to confirmation page
         return res.redirect(redirectUrl);
       }
     } catch (error) {
       console.error('VNPay return error:', error);
-      // Redirect to error page
       return res.redirect('http://localhost:3000/confirmation/error?message=Payment processing error');
     }
   }
 
-  @Get('vnpay/test-confirmation/:orderId')
-  async testConfirmationUrl(@Param('orderId') orderId: string, @Query('status') status: 'confirmed' | 'failed' = 'confirmed') {
-    try {
-      const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, status);
-      return new ResponseData({
-        orderId,
-        status,
-        redirectUrl,
-        message: 'Confirmation URL generated successfully'
-      }, HttpStatus.OK, HttpMessage.SUCCESS);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
+  // @Get('vnpay/test-confirmation/:orderId')
+  // async testConfirmationUrl(@Param('orderId') orderId: string, @Query('status') status: 'confirmed' | 'failed' = 'confirmed') {
+  //   try {
+  //     const redirectUrl = await this.bookingService.buildConfirmationUrl(orderId, status);
+  //     return new ResponseData({
+  //       orderId,
+  //       status,
+  //       redirectUrl,
+  //       message: 'Confirmation URL generated successfully'
+  //     }, HttpStatus.OK, HttpMessage.SUCCESS);
+  //   } catch (error) {
+  //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+  //   }
+  // }
 }

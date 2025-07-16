@@ -24,8 +24,9 @@ export class GeminiService {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
       const prompt = `
-        Phân tích câu hỏi người dùng và trả về JSON với intent + filters (nếu có).
-        Intent: get_movies | get_showtimes | book_ticket | get_promotions | get_reviews | general | chat
+        Bạn là trợ lý AI của rạp chiếu phim.
+        Nếu người dùng hỏi thông tin như phim, lịch chiếu, khuyến mãi,... hãy trả về JSON với intent + filters.
+        Nếu người dùng chỉ muốn trò chuyện, hãy trả lời 1 cách tự nhiên (bằng tiếng Việt).
 
         Filters: genre, movie, theater, date (YYYY-MM-DD), time
 

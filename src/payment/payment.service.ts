@@ -62,7 +62,7 @@ export class PaymentService {
   async createMoMoPayment(paymentData: MoMoPaymentRequest): Promise<MoMoPaymentResponse> {
     try {
       const requestId = paymentData.orderId;
-      const requestType = 'payWithATM';
+      const requestType = 'captureWallet';
       const extraData = paymentData.extraData || '';
       const orderGroupId = '';
       const autoCapture = true;
