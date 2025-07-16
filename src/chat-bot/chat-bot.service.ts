@@ -10,6 +10,7 @@ export class ChatBotService {
   ) {}
 
   async processUserQuery(message: string) {
+    console.log('Processing query:', message);
     const { intent, filters } = await this.gemini.analyze(message);
 
     // Helper function để parse date - giờ đây chỉ cần parse YYYY-MM-DD
@@ -170,6 +171,9 @@ export class ChatBotService {
           ],
         };
 
+      case 'chat':
+        return await this.handleChatConversation(message);
+
       default:
         return {
           message: 'Xin lỗi, tôi chưa hiểu yêu cầu của bạn. Bạn có thể hỏi về phim, lịch chiếu, đặt vé, hoặc khuyến mãi.',
@@ -177,5 +181,21 @@ export class ChatBotService {
           filters: filters,
         };
     }
+  }
+
+  private async handleChatConversation(message: string) {
+    // Sử dụng Gemini để tạo phản hồi trò chuyện tự nhiên
+    const response = await this.gemini.generateChatResponse(message);
+
+    return {
+      message: response,
+      intent: 'chat',
+      suggestions: [
+        'Phim nào đang hot?',
+        'Rạp nào gần đây?',
+        'Giá vé bao nhiêu?',
+        'Có khuyến mãi gì không?',
+      ],
+    };
   }
 }

@@ -11,7 +11,11 @@ export class GeminiService {
     this.genAI = new GoogleGenerativeAI(apiKey || '');
   }
 
-  async analyze(message: string): Promise<{ intent: string; filters: Record<string, string> }> {
+  async analyze(message: string): Promise<{
+    intent: string;
+    filters: Record<string, string>;
+    message?: string;
+  }> {
     try {
       const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -20,8 +24,8 @@ export class GeminiService {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
       const prompt = `
-        Phân tích câu hỏi người dùng và trả về JSON với intent + filters.
-        Intent: get_movies | get_showtimes | book_ticket | get_promotions | get_reviews | general
+        Phân tích câu hỏi người dùng và trả về JSON với intent + filters (nếu có).
+        Intent: get_movies | get_showtimes | book_ticket | get_promotions | get_reviews | general | chat
 
         Filters: genre, movie, theater, date (YYYY-MM-DD), time
 
@@ -32,13 +36,14 @@ export class GeminiService {
         Câu hỏi: "${message}"
 
         Trả về JSON thuần, KHÔNG markdown, KHÔNG giải thích. Ví dụ:
-        {"intent": "get_movies", "filters": {"genre": "action"}}
+        {"intent": "chat", "filters": {}}
       `;
+      console.log('[GeminiService] Analyzing:', prompt);
 
       const result = await model.generateContent(prompt);
       let text = result.response.text().trim();
 
-      // Cleanup markdown or formatting
+      // Cleanup markdown hoặc định dạng
       text = text.replace(/```json\s*|\s*```/g, '').replace(/```\s*|\s*```/g, '');
       text = text.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
 
@@ -50,7 +55,15 @@ export class GeminiService {
         throw new Error('Invalid format');
       }
 
-      // Normalize genre mapping
+      // Nếu là chat → trả về intent chat để ChatBotService xử lý
+      if (parsed.intent === 'chat') {
+        return {
+          intent: 'chat',
+          filters: { originalMessage: message },
+        };
+      }
+
+      // Map tiếng Anh sang tiếng Việt nếu có genre
       const genreMap: Record<string, string> = {
         action: 'Hành động',
         comedy: 'Hài',
@@ -79,10 +92,26 @@ export class GeminiService {
     }
   }
 
-  private fallbackAnalyze(message: string): { intent: string; filters: Record<string, string> } {
+  private fallbackAnalyze(message: string): {
+    intent: string;
+    filters: Record<string, string>;
+    message?: string;
+  } {
     const lower = message.toLowerCase();
     const filters: Record<string, string> = {};
     let intent = 'general';
+
+    if (
+      lower.includes('chào') ||
+      lower.includes('cảm ơn') ||
+      lower.includes('khỏe không') ||
+      lower.includes('bạn là ai')
+    ) {
+      return {
+        intent: 'chat',
+        filters: { originalMessage: message },
+      };
+    }
 
     if (lower.includes('phim') || lower.includes('movie')) {
       if (lower.includes('suất chiếu') || lower.includes('lịch chiếu') || lower.includes('showtime')) {
@@ -121,10 +150,59 @@ export class GeminiService {
       filters.date = yest.toISOString().split('T')[0];
     }
 
-    // Optional: detect time
     const timeMatch = message.match(/\b(\d{1,2}(:\d{2})?\s*(AM|PM|am|pm)?)\b/);
     if (timeMatch) filters.time = timeMatch[1];
 
     return { intent, filters };
+  }
+
+  async generateChatResponse(message: string): Promise<string> {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+      const result = await model.generateContent(`
+        Bạn là trợ lý AI thân thiện cho hệ thống rạp chiếu phim. Hãy trả lời tin nhắn của người dùng một cách tự nhiên và thân thiện.
+
+        Tin nhắn của người dùng: "${message}"
+
+        Hướng dẫn trả lời:
+        - Trả lời bằng tiếng Việt tự nhiên, thân thiện
+        - Nếu người dùng chào hỏi, hãy chào lại và giới thiệu bản thân
+        - Nếu người dùng hỏi về khả năng, hãy giải thích bạn có thể giúp gì về phim ảnh
+        - Nếu người dùng cảm ơn, hãy đáp lại lịch sự
+        - Nếu người dùng hỏi câu hỏi chung, hãy trả lời và gợi ý về dịch vụ phim
+        - Luôn giữ tông giọng vui vẻ, hữu ích
+        - Không trả lời quá dài, khoảng 1-2 câu
+        - Có thể sử dụng emoji phù hợp
+
+        Ví dụ:
+        - "Hello" → "Xin chào! Tôi là trợ lý AI của rạp phim. Tôi có thể giúp bạn tìm phim, xem lịch chiếu, hoặc đặt vé. Bạn cần hỗ trợ gì? 🎬"
+        - "Cảm ơn" → "Không có gì! Tôi luôn sẵn sàng giúp bạn về mọi thứ liên quan đến phim ảnh. 😊"
+        - "Bạn là ai?" → "Tôi là trợ lý AI của hệ thống rạp chiếu phim, có thể giúp bạn tìm phim hay, xem lịch chiếu và đặt vé một cách dễ dàng! 🤖"
+
+        Trả lời ngắn gọn:
+      `);
+
+      return result.response.text().trim();
+    } catch (err) {
+      console.error('[GeminiService] Lỗi tạo chat response:', err);
+
+      // Fallback responses
+      const lower = message.toLowerCase();
+
+      if (lower.includes('chào') || lower.includes('hi') || lower.includes('hello')) {
+        return 'Xin chào! Tôi là trợ lý AI của rạp phim. Tôi có thể giúp bạn tìm phim, xem lịch chiếu, hoặc đặt vé. Bạn cần hỗ trợ gì? 🎬';
+      } else if (lower.includes('cảm ơn') || lower.includes('thank')) {
+        return 'Không có gì! Tôi luôn sẵn sàng giúp bạn về mọi thứ liên quan đến phim ảnh. 😊';
+      } else if (lower.includes('bạn là ai') || lower.includes('who are you')) {
+        return 'Tôi là trợ lý AI của hệ thống rạp chiếu phim, có thể giúp bạn tìm phim hay, xem lịch chiếu và đặt vé một cách dễ dàng! 🤖';
+      } else if (lower.includes('khỏe không') || lower.includes('how are you')) {
+        return 'Tôi rất ổn, cảm ơn bạn đã hỏi! Tôi có thể giúp bạn tìm phim hay gì không? 😊';
+      } else if (lower.includes('tạm biệt') || lower.includes('bye')) {
+        return 'Tạm biệt! Hẹn gặp lại bạn và chúc bạn xem phim vui vẻ! 👋';
+      } else {
+        return 'Tôi có thể giúp bạn tìm phim, xem lịch chiếu, đặt vé và nhiều thứ khác về phim ảnh. Bạn muốn làm gì? 🎭';
+      }
+    }
   }
 }
