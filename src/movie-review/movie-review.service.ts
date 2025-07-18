@@ -20,7 +20,7 @@ export class MovieReviewService {
     });
 
     if (existingReview) {
-      throw new BadRequestException('User has already reviewed this movie');
+      throw new BadRequestException('Ban đã đánh giá phim này rồi');
     }
     // Tạo review mới
     return this.prisma.movieReview.create({

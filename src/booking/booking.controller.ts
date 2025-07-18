@@ -115,22 +115,37 @@ export class BookingController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
+  @Get('detail/:id')
   async findOne(@Param('id') id: string) {
     try {
       const booking = await this.bookingService.getBooking(+id);
-      return new ResponseData(booking, HttpStatus.ACCEPTED, HttpMessage.SERVER_ERROR)
+      return new ResponseData(booking, HttpStatus.ACCEPTED, HttpMessage.SUCCESS)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  async findByUser(@Param('id') id: string) {
+  @Get('user/:userId')
+  async findByUser(@Param('userId') userId: string) {
     try {
-      const booking = await this.bookingService.getUserBookings(+id);
-      return new ResponseData(booking, HttpStatus.ACCEPTED, HttpMessage.SERVER_ERROR)
+      const booking = await this.bookingService.getUserBookings(+userId);
+      return new ResponseData(booking, HttpStatus.ACCEPTED, HttpMessage.SUCCESS)
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Get('user/:userId/movie/:movieId')
+  async checkUserBookingForMovie(
+    @Param('userId') userId: string,
+    @Param('movieId') movieId: string
+  ) {
+    try {
+      const hasBooking = await this.bookingService.checkUserBookingForMovie(+userId, +movieId);
+      console.log('hasBooking', hasBooking);
+      return new ResponseData(hasBooking, HttpStatus.ACCEPTED, HttpMessage.SUCCESS)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

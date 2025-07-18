@@ -619,4 +619,95 @@ export class BookingService {
       console.error('Error updating MoMo payment status:', error);
     }
   }
+
+  async checkUserBookingForMovie(userId: number, movieId: number) {
+    try {
+      // Tìm booking của user cho movie cụ thể
+      const bookings = await this.prisma.booking.findMany({
+        where: {
+          userId: userId,
+          showtime: {
+            movieId: movieId,
+          },
+          status: {
+            in: ['CONFIRMED', 'PENDING'], // Chỉ tính booking đã xác nhận hoặc đang chờ
+          },
+        },
+        include: {
+          showtime: {
+            include: {
+              movie: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+              theater: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          seats: {
+            include: {
+              seat: {
+                select: {
+                  id: true,
+                  row: true,
+                  number: true,
+                },
+              },
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              status: true,
+              paymentMethod: true,
+              amount: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+        orderBy: {
+          bookingDate: 'desc',
+        },
+      });
+
+      return {
+        hasBooking: bookings.length > 0,
+        bookingCount: bookings.length,
+        bookings: bookings.map(booking => ({
+          id: booking.id,
+          bookingCode: booking.bookingCode,
+          status: booking.status,
+          totalPrice: booking.totalPrice,
+          bookingDate: booking.bookingDate,
+          paymentMethod: booking.paymentMethod,
+          showtime: {
+            id: booking.showtime.id,
+            date: booking.showtime.date,
+            time: booking.showtime.time,
+            price: booking.showtime.price,
+            movie: booking.showtime.movie,
+            theater: booking.showtime.theater,
+          },
+          seats: booking.seats.map(bookingSeat => ({
+            id: bookingSeat.seat.id,
+            row: bookingSeat.seat.row,
+            number: bookingSeat.seat.number,
+            status: bookingSeat.status,
+          })),
+          latestPayment: booking.payments[0] || null,
+        })),
+      };
+    } catch (error) {
+      console.error('Error checking user booking for movie:', error);
+      throw new BadRequestException(`Failed to check user booking: ${error.message}`);
+    }
+  }
 }

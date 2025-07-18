@@ -1,8 +1,10 @@
 // movie-review.dto.ts
+import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateMovieReviewDto {
   @IsInt({ message: 'userId must be an integer' })
+  @Type(() => Number)
   userId: number;
 
   @IsInt({ message: 'movieId must be an integer' })

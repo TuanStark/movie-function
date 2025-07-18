@@ -69,27 +69,27 @@ export class MovieReviewController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':userId/:movieId')
-  async updateReview(
-    @Param('userId') userId: number,
-    @Param('movieId') movieId: number,
-    @Body() updateReviewDto: UpdateMovieReviewDto,
-  ) {
-    try {
-      return new ResponseData(
-        await this.movieReviewService.update(userId, movieId, updateReviewDto),
-        HttpStatus.ACCEPTED,
-        HttpMessage.SUCCESS
-      );
-    } catch (error) {
-      return new ResponseData(
-        null,
-        HttpStatus.BAD_REQUEST,
-        error.message || HttpMessage.INVALID_INPUT_FORMAT
-      );
-    }
-  }
+  // @UseGuards(JwtAuthGuard)
+  // @Patch(':userId/:movieId')
+  // async updateReview(
+  //   @Param('userId') userId: number,
+  //   @Param('movieId') movieId: number,
+  //   @Body() updateReviewDto: UpdateMovieReviewDto,
+  // ) {
+  //   try {
+  //     return new ResponseData(
+  //       await this.movieReviewService.update(userId, movieId, updateReviewDto),
+  //       HttpStatus.ACCEPTED,
+  //       HttpMessage.SUCCESS
+  //     );
+  //   } catch (error) {
+  //     return new ResponseData(
+  //       null,
+  //       HttpStatus.BAD_REQUEST,
+  //       error.message || HttpMessage.INVALID_INPUT_FORMAT
+  //     );
+  //   }
+  // }
 
   @Delete(':userId/:movieId')
   async deleteReview(
