@@ -26,6 +26,7 @@ import { ChatBotModule } from './chat-bot/chat-bot.module';
 import { ChatBotController } from './chat-bot/chat-bot.controller';
 import { ChatBotService } from './chat-bot/chat-bot.service';
 import { GeminiModule } from './gemini/gemini.module';
+import { MovieReviewModule } from './movie-review/movie-review.module';
 
 
 @Module({
@@ -78,6 +79,7 @@ import { GeminiModule } from './gemini/gemini.module';
     DashboardModule,
     ChatBotModule,
     GeminiModule,
+    MovieReviewModule,
   ],
   controllers: [AppController, ImageController, ChatBotController],
   providers: [AppService, ChatBotService],

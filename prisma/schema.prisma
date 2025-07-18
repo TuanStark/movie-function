@@ -74,6 +74,7 @@ model MovieReview {
   movie      Movie     @relation(fields: [movieId], references: [id])
 
   @@unique([userId, movieId])
+  @@index([movieId]) // Thêm index cho movieId
   @@map("movieReviews")
 }
 
