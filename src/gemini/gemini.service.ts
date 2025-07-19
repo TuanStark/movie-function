@@ -27,6 +27,7 @@ export class GeminiService {
         Bạn là trợ lý AI của rạp chiếu phim.
         Nếu người dùng hỏi thông tin như phim, lịch chiếu, khuyến mãi,... hãy trả về JSON với intent + filters.
         Nếu người dùng chỉ muốn trò chuyện, hãy trả lời 1 cách tự nhiên (bằng tiếng Việt).
+        Intent: get_movies | get_showtimes | book_ticket | get_promotions | get_reviews | chat
 
         Filters: genre, movie, theater, date (YYYY-MM-DD), time
 
@@ -39,7 +40,7 @@ export class GeminiService {
         Trả về JSON thuần, KHÔNG markdown, KHÔNG giải thích. Ví dụ:
         {"intent": "chat", "filters": {}}
       `;
-      console.log('[GeminiService] Analyzing:', prompt);
+      // console.log('[GeminiService] Analyzing:', prompt);
 
       const result = await model.generateContent(prompt);
       let text = result.response.text().trim();
