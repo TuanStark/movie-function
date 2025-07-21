@@ -78,7 +78,6 @@ export class TheatersController {
     },
   })) 
   async update(@Param('id') id: string, @Body() updateTheaterDto: UpdateTheaterDto, @UploadedFile() file: Express.Multer.File) {
-    console.log("hello");
     try {
       const theater = await this.theatersService.update(+id, updateTheaterDto, file);
       return new ResponseData(theater, HttpStatus.OK, HttpMessage.SUCCESS);

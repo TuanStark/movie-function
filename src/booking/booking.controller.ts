@@ -144,7 +144,6 @@ export class BookingController {
   ) {
     try {
       const hasBooking = await this.bookingService.checkUserBookingForMovie(+userId, +movieId);
-      console.log('hasBooking', hasBooking);
       return new ResponseData(hasBooking, HttpStatus.ACCEPTED, HttpMessage.SUCCESS)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
