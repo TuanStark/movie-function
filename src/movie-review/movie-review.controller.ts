@@ -49,6 +49,23 @@ export class MovieReviewController {
     }
   }
 
+  @Get()
+  async findAll(@Query() query: FindAllDto) {
+    try {
+      return new ResponseData(
+        await this.movieReviewService.findAll(query),
+        HttpStatus.ACCEPTED,
+        HttpMessage.SUCCESS
+      );
+    } catch (error) {
+      return new ResponseData(
+        null,
+        HttpStatus.BAD_REQUEST,
+        error.message || HttpMessage.INVALID_INPUT_FORMAT
+      );
+    }
+  }
+
   @Get(':userId/:movieId')
   async getReview(
     @Param('userId', ) userId: number,

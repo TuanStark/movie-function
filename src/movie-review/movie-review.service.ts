@@ -85,6 +85,77 @@ export class MovieReviewService {
     };
   }
 
+  async findAll (query: FindAllDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if (pageNumber < 1 || limitNumber < 1) {
+      throw new BadRequestException('Page and limit must be greater than 0');
+    }
+
+    const take = limitNumber;
+    const skip = (pageNumber - 1) * take;
+
+    const where = search
+      ? {
+          OR: [
+            { user: { firstName: { contains: search } } },
+            { user: { lastName: { contains: search } } },
+          ],
+        }
+      : {};
+
+    const orderBy = {
+      [sortBy]: sortOrder,
+    };
+
+    const [reviews, total] = await Promise.all([
+      this.prisma.movieReview.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+          movie: {
+            select: {
+              id: true,
+              title: true,
+              posterPath: true,
+            },
+          },
+        },
+      }),
+      this.prisma.movieReview.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data: reviews,
+      meta: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    };
+  }
+
   // Get a specific review
   async getReview(userId: number, movieId: number) {
     return this.prisma.movieReview.findUnique({

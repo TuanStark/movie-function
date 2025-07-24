@@ -106,12 +106,14 @@ export class ShowTimesService {
     if (!movie) {
       throw new NotFoundException(`Movie with ID ${movieId} not found`);
     }
-    return await this.prisma.showtime.findMany({
+    const showtimes = await this.prisma.showtime.findMany({
       where: { movieId },
       include: {
         theater: true,
+        movie: true,
       },
     });
+    return showtimes;
   }
 
   async update(id: number, updateShowTimeDto: UpdateShowTimeDto) {

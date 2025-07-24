@@ -61,4 +61,10 @@ export class ShowTimesController {
     const showtime = await this.showTimesService.remove(+id);
     return new ResponseData(showtime, HttpStatus.OK, HttpMessage.DELETED);
   }
+
+  @Get('theater/:theaterId')
+  async getShowtimesByTheaterId(@Param('theaterId', ParseIntPipe) theaterId: string) {
+    const showtimes = await this.showTimesService.getShowtimesByMovieId(+theaterId);
+    return new ResponseData(showtimes, HttpStatus.OK, HttpMessage.SUCCESS);
+  }
 }
